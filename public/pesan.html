@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Form Pemesanan - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .metode-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .metode-option {
+            flex: 1;
+        }
+        
+        .metode-radio {
+            display: none;
+        }
+        
+        .metode-card {
+            background: var(--card-bg);
+            border: 2px solid transparent;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            height: 100%;
+        }
+        
+        .metode-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--card-border);
+        }
+        
+        .metode-radio:checked + .metode-card {
+            border-color: var(--accent-green);
+            background: rgba(212, 252, 121, 0.1);
+            box-shadow: 0 5px 15px rgba(212, 252, 121, 0.2);
+        }
+        
+        .metode-icon {
+            font-size: 2.5rem;
+            color: var(--accent-green);
+            margin-bottom: 10px;
+        }
+        
+        .info-cicilan {
+            background: rgba(212, 252, 121, 0.1);
+            border: 1px solid var(--accent-green);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            animation: fadeIn 0.5s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .detail-cicilan {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .detail-item {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 0.8rem;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-green);
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-green);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        
+        .success-message {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+
+    <div class="glass-card" style="width: 100%; max-width: 500px; padding: 30px;">
+        <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-shopping-cart"></i> Detail Pemesanan
+        </h2>
+        
+        <div id="errorContainer"></div>
+        
+        <form id="formPesan">
+            <div class="form-group">
+                <label><i class="fas fa-paw"></i> Jenis Hewan</label>
+                <input type="text" id="namaHewan" readonly style="background: rgba(0,0,0,0.3); color: var(--text-gray); font-weight: bold;">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-tag"></i> Harga Satuan</label>
+                <input type="text" id="hargaSatuanDisplay" readonly style="background: rgba(0,0,0,0.3); color: var(--accent-green); font-weight: bold;">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-hashtag"></i> Jumlah Ekor</label>
+                <input type="number" id="jumlah" value="1" min="1" max="100" required 
+                       oninput="validateJumlah()">
+                <small style="color: var(--text-gray); font-size: 0.8rem;">Minimal 1 ekor</small>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-calendar-alt"></i> Jadwal Pemotongan</label>
+                <input type="date" id="jadwal" required 
+                       min="<?php echo date('Y-m-d'); ?>">
+                <small style="color: var(--text-gray); font-size: 0.8rem;">Tidak boleh di masa lalu</small>
+            </div>
+
+            <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 1rem;">Total Pembayaran:</span>
+                    <span id="totalHarga" style="font-size: 1.8rem; color: var(--accent-green); font-weight: bold;">Rp 0</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-credit-card"></i> Metode Pembayaran</label>
+                <div class="metode-container">
+                    <label class="metode-option">
+                        <input type="radio" name="metode" value="cash" checked class="metode-radio" onclick="toggleMetode('cash')">
+                        <div class="metode-card">
+                            <div class="metode-icon">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </div>
+                            <h4>Cash/Lunas</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-gray); margin: 5px 0;">Bayar penuh sekaligus</p>
+                            <small style="color: #2ecc71; font-weight: bold;">✓ Rekomendasi</small>
+                        </div>
+                    </label>
+                    
+                    <label class="metode-option">
+                        <input type="radio" name="metode" value="cicilan" class="metode-radio" onclick="toggleMetode('cicilan')">
+                        <div class="metode-card">
+                            <div class="metode-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <h4>Cicilan</h4>
+                            <p style="font-size: 0.85rem; color: var(--text-gray); margin: 5px 0;">DP 30% + 12 bulan</p>
+                            <small style="color: #f1c40f;">* Fleksibel</small>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Informasi DP (muncul jika pilih cicilan) -->
+            <div id="infoCicilan" style="display: none;" class="info-cicilan">
+                <h4 style="margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-info-circle"></i> Rincian Cicilan
+                </h4>
+                
+                <div id="cicilanDetail" class="detail-cicilan">
+                    <div class="detail-item">
+                        <div class="detail-label">Down Payment (30%)</div>
+                        <div class="detail-value" id="dpAmount">Rp 0</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Cicilan per bulan (12x)</div>
+                        <div class="detail-value" id="cicilanAmount">Rp 0</div>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 10px; font-size: 0.85rem; color: var(--text-gray);">
+                    <p><i class="fas fa-check-circle" style="color: #2ecc71; margin-right: 5px;"></i> DP minimal 30% dari total</p>
+                    <p><i class="fas fa-check-circle" style="color: #2ecc71; margin-right: 5px;"></i> Cicilan 12 bulan tanpa bunga</p>
+                    <p><i class="fas fa-check-circle" style="color: #2ecc71; margin-right: 5px;"></i> Jatuh tempo tiap bulan sama</p>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="submitBtn" style="margin-top: 20px;">
+                <i class="fas fa-arrow-right"></i> LANJUT PEMBAYARAN
+            </button>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="katalog.html" style="color: var(--text-gray); font-size: 0.9rem; text-decoration: none;">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Katalog
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        // ==========================================
+        // 1. INISIALISASI & VALIDASI AWAL
+        // ==========================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const hewanId = urlParams.get('id');
+        const namaHewan = decodeURIComponent(urlParams.get('nama') || '');
+        let hargaHewan = parseInt(urlParams.get('harga')) || 0;
+
+        // Validasi data URL
+        if (!hewanId || !namaHewan || hargaHewan <= 0) {
+            showError('Data hewan tidak valid. Silakan kembali ke katalog.');
+            setTimeout(() => {
+                window.location.href = 'katalog.html';
+            }, 3000);
+        }
+
+        // Cek login
+        const userId = localStorage.getItem('user_id');
+        if (!userId) {
+            showError('Silakan login terlebih dahulu untuk memesan.', true);
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        }
+
+        // Set tanggal minimal untuk jadwal (besok)
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('jadwal').min = tomorrow.toISOString().split('T')[0];
+
+        // Set default jadwal (7 hari dari sekarang)
+        const defaultDate = new Date(today);
+        defaultDate.setDate(defaultDate.getDate() + 7);
+        document.getElementById('jadwal').value = defaultDate.toISOString().split('T')[0];
+
+        // ==========================================
+        // 2. ISI FORM OTOMATIS
+        // ==========================================
+        document.getElementById('namaHewan').value = namaHewan;
+        document.getElementById('hargaSatuanDisplay').value = "Rp " + hargaHewan.toLocaleString('id-ID');
+
+        // ==========================================
+        // 3. ELEMENT REFERENCES
+        // ==========================================
+        const inputJumlah = document.getElementById('jumlah');
+        const displayTotal = document.getElementById('totalHarga');
+        const infoCicilan = document.getElementById('infoCicilan');
+        const submitBtn = document.getElementById('submitBtn');
+        const errorContainer = document.getElementById('errorContainer');
+
+        // ==========================================
+        // 4. FUNGSI HELPER
+        // ==========================================
+        function showError(message, isWarning = false) {
+            errorContainer.innerHTML = `
+                <div class="${isWarning ? 'warning-message' : 'error-message'}" style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${isWarning ? 'exclamation-triangle' : 'exclamation-circle'}"></i>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+
+        function showSuccess(message) {
+            errorContainer.innerHTML = `
+                <div class="success-message" style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-check-circle"></i>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+
+        function clearMessages() {
+            errorContainer.innerHTML = '';
+        }
+
+        function formatRupiah(amount) {
+            return 'Rp ' + parseInt(amount).toLocaleString('id-ID');
+        }
+
+        // ==========================================
+        // 5. VALIDASI JUMLAH
+        // ==========================================
+        function validateJumlah() {
+            const jumlah = parseInt(inputJumlah.value) || 0;
+            
+            if (jumlah < 1) {
+                inputJumlah.value = 1;
+            }
+            
+            if (jumlah > 100) {
+                inputJumlah.value = 100;
+                showError('Maksimal pemesanan 100 ekor per transaksi', true);
+            }
+            
+            hitungTotal();
+        }
+
+        // ==========================================
+        // 6. FUNGSI PERHITUNGAN
+        // ==========================================
+        function hitungTotal() {
+            const jumlah = parseInt(inputJumlah.value) || 1;
+            const total = jumlah * hargaHewan;
+            
+            displayTotal.innerText = formatRupiah(total);
+            
+            // Jika pilih cicilan, hitung juga cicilan
+            if (document.querySelector('input[name="metode"]:checked').value === 'cicilan') {
+                hitungCicilan(total);
+            }
+            
+            return total;
+        }
+
+        function hitungCicilan(total) {
+            // DP 30% dengan pembulatan ke ribuan
+            const dpPersen = 30;
+            let dpAmount = Math.round((total * dpPersen) / 100 / 1000) * 1000;
+            
+            // Pastikan DP minimal 30%
+            const minDP = Math.round((total * 30) / 100 / 1000) * 1000;
+            if (dpAmount < minDP) {
+                dpAmount = minDP;
+            }
+            
+            // Sisa setelah DP
+            const sisa = total - dpAmount;
+            
+            // Cicilan 12 bulan dengan pembulatan ke ribuan
+            let cicilanPerBulan = Math.round((sisa / 12) / 1000) * 1000;
+            
+            // Jika cicilan per bulan terlalu kecil, sesuaikan
+            if (cicilanPerBulan < 10000) { // Minimal Rp 10.000 per bulan
+                cicilanPerBulan = 10000;
+            }
+            
+            // Tampilkan hasil
+            document.getElementById('dpAmount').innerText = formatRupiah(dpAmount);
+            document.getElementById('cicilanAmount').innerText = formatRupiah(cicilanPerBulan);
+        }
+
+        // ==========================================
+        // 7. TOGGLE METODE PEMBAYARAN
+        // ==========================================
+        function toggleMetode(metode) {
+            if (metode === 'cicilan') {
+                infoCicilan.style.display = 'block';
+                const total = hitungTotal();
+                hitungCicilan(total);
+            } else {
+                infoCicilan.style.display = 'none';
+                hitungTotal();
+            }
+        }
+
+        // ==========================================
+        // 8. VALIDASI FORM SEBELUM SUBMIT
+        // ==========================================
+        function validateForm() {
+            clearMessages();
+            
+            const jumlah = parseInt(inputJumlah.value) || 0;
+            const jadwal = document.getElementById('jadwal').value;
+            const metode = document.querySelector('input[name="metode"]:checked').value;
+            
+            // Validasi jumlah
+            if (jumlah < 1) {
+                showError('Jumlah minimal 1 ekor');
+                inputJumlah.focus();
+                return false;
+            }
+            
+            // Validasi jadwal
+            if (!jadwal) {
+                showError('Pilih jadwal pemotongan');
+                return false;
+            }
+            
+            const today = new Date().toISOString().split('T')[0];
+            if (jadwal < today) {
+                showError('Jadwal tidak boleh di masa lalu');
+                return false;
+            }
+            
+            // Validasi untuk cicilan
+            if (metode === 'cicilan') {
+                const total = jumlah * hargaHewan;
+                const dpAmount = Math.round((total * 30) / 100);
+                
+                if (dpAmount < 100000) { // Minimal DP Rp 100.000
+                    showError('Untuk cicilan, minimal total transaksi Rp 333.334');
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // ==========================================
+        // 9. PROSES SUBMIT PESANAN
+        // ==========================================
+        document.getElementById('formPesan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Validasi form
+            if (!validateForm()) {
+                return;
+            }
+            
+            // Cek login lagi
+            if (!userId) {
+                showError('Sesi login telah berakhir. Silakan login ulang.', true);
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                return;
+            }
+            
+            const jumlah = parseInt(inputJumlah.value);
+            const jadwal = document.getElementById('jadwal').value;
+            const metode = document.querySelector('input[name="metode"]:checked').value;
+            const totalHarga = jumlah * hargaHewan;
+            
+            // Tampilkan loading
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="loading"></span> Memproses...';
+            submitBtn.disabled = true;
+            
+            try {
+                console.log('📦 Membuat pesanan...');
+                
+                // 1. Buat pesanan
+                const dataPesanan = {
+                    user_id: userId,
+                    hewan_id: hewanId,
+                    jumlah: jumlah,
+                    total_harga: totalHarga,
+                    jadwal: jadwal,
+                    metode_bayar: metode
+                };
+                
+                console.log('Data pesanan:', dataPesanan);
+                
+                const responsePesan = await fetch('http://localhost:3000/api/pesan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dataPesanan)
+                });
+
+                const resultPesan = await responsePesan.json();
+                
+                if (!responsePesan.ok) {
+                    throw new Error(resultPesan.error || resultPesan.message || 'Gagal membuat pesanan');
+                }
+                
+                const pesananId = resultPesan.id_pesanan;
+                console.log('✅ Pesanan dibuat:', pesananId);
+                
+                // 2. Jika cicilan, set metode cicilan dengan DP
+                if (metode === 'cicilan') {
+                    console.log('🔄 Mengatur metode cicilan...');
+                    
+                    const responseMetode = await fetch(`http://localhost:3000/api/pesanan/${pesananId}/metode`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            metode_bayar: 'cicilan', 
+                            dp_percentage: 30 
+                        })
+                    });
+                    
+                    const resultMetode = await responseMetode.json();
+                    
+                    if (!responseMetode.ok) {
+                        console.warn('⚠️ Gagal set metode cicilan:', resultMetode);
+                        // Lanjutkan saja, karena pesanan sudah dibuat
+                    } else {
+                        console.log('✅ Metode cicilan berhasil:', resultMetode);
+                    }
+                }
+                
+                // 3. Tampilkan sukses dan redirect
+                showSuccess(`Pesanan berhasil dibuat! No. Pesanan: #${pesananId}`);
+                
+                setTimeout(() => {
+                    if (metode === 'cicilan') {
+                        window.location.href = `pembayaran.html?id_pesanan=${pesananId}&metode=cicilan`;
+                    } else {
+                        window.location.href = `pembayaran.html?id_pesanan=${pesananId}&metode=cash`;                    }
+                }, 1500);
+                
+            } catch (error) {
+                console.error('❌ Error membuat pesanan:', error);
+                
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                // Tampilkan error
+                if (error.message.includes('Stok tidak mencukupi')) {
+                    showError('Stok hewan tidak mencukupi. Silakan pilih jumlah yang lebih kecil atau hewan lain.');
+                } else if (error.message.includes('koneksi')) {
+                    showError('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+                } else {
+                    showError(`Gagal memesan: ${error.message}`);
+                }
+                
+                // Scroll ke atas untuk lihat error
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+
+        // ==========================================
+        // 10. EVENT LISTENERS
+        // ==========================================
+        inputJumlah.addEventListener('input', hitungTotal);
+        document.getElementById('jadwal').addEventListener('change', function() {
+            const today = new Date().toISOString().split('T')[0];
+            if (this.value < today) {
+                showError('Jadwal tidak boleh di masa lalu', true);
+                this.value = today;
+            }
+        });
+
+        // ==========================================
+        // 11. INITIAL CALCULATION
+        // ==========================================
+        hitungTotal();
+
+        // ==========================================
+        // 12. KEYBOARD SHORTCUTS
+        // ==========================================
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+Enter untuk submit
+            if (e.ctrlKey && e.key === 'Enter') {
+                document.getElementById('formPesan').dispatchEvent(new Event('submit'));
+            }
+            
+            // Escape untuk reset
+            if (e.key === 'Escape') {
+                inputJumlah.value = 1;
+                hitungTotal();
+            }
+        });
+
+        // ==========================================
+        // 13. AUTO-SAVE DRAFT (OPTIONAL)
+        // ==========================================
+        // Simpan draft ke localStorage
+        function saveDraft() {
+            const draft = {
+                jumlah: inputJumlah.value,
+                jadwal: document.getElementById('jadwal').value,
+                metode: document.querySelector('input[name="metode"]:checked').value
+            };
+            localStorage.setItem('pesan_draft', JSON.stringify(draft));
+        }
+
+        // Load draft dari localStorage
+        function loadDraft() {
+            const draft = JSON.parse(localStorage.getItem('pesan_draft'));
+            if (draft) {
+                inputJumlah.value = draft.jumlah || 1;
+                document.getElementById('jadwal').value = draft.jadwal || '';
+                document.querySelector(`input[name="metode"][value="${draft.metode || 'cash'}"]`).checked = true;
+                toggleMetode(draft.metode || 'cash');
+                hitungTotal();
+            }
+        }
+
+        // Save draft setiap perubahan
+        inputJumlah.addEventListener('change', saveDraft);
+        document.getElementById('jadwal').addEventListener('change', saveDraft);
+        document.querySelectorAll('input[name="metode"]').forEach(radio => {
+            radio.addEventListener('change', saveDraft);
+        });
+
+        // Load draft saat halaman dimuat
+        window.addEventListener('load', loadDraft);
+
+        // Clear draft saat berhasil submit
+        window.addEventListener('beforeunload', function() {
+            localStorage.removeItem('pesan_draft');
+        });
+
+    </script>
+</body>
+</html>

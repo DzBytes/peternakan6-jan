@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pembayaran - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .payment-step {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+            position: relative;
+        }
+        
+        .payment-step::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--card-border);
+            z-index: 1;
+        }
+        
+        .step {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: var(--card-border);
+            color: var(--text-gray);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .step.active .step-number {
+            background: var(--accent-green);
+            color: #000;
+        }
+        
+        .step-label {
+            font-size: 0.9rem;
+            color: var(--text-gray);
+        }
+        
+        .step.active .step-label {
+            color: var(--accent-green);
+            font-weight: bold;
+        }
+        
+        .payment-summary {
+            background: linear-gradient(135deg, rgba(212, 252, 121, 0.1) 0%, rgba(30, 34, 45, 0.8) 100%);
+            padding: 25px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 2px solid rgba(212, 252, 121, 0.3);
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 15px 0;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.5rem;
+            padding-top: 20px;
+            margin-top: 20px;
+            border-top: 2px solid rgba(212, 252, 121, 0.3);
+        }
+        
+        .bank-info {
+            background: rgba(255,255,255,0.05);
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border: 1px solid var(--card-border);
+        }
+        
+        .bank-number {
+            font-family: 'Courier New', monospace;
+            font-size: 1.8rem;
+            letter-spacing: 2px;
+            color: var(--accent-green);
+            font-weight: bold;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .file-upload-area {
+            border: 2px dashed var(--card-border);
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-upload-area:hover {
+            border-color: var(--accent-green);
+            background: rgba(212, 252, 121, 0.05);
+        }
+        
+        .file-upload-area i {
+            font-size: 3rem;
+            color: var(--accent-green);
+            margin-bottom: 15px;
+        }
+        
+        .file-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .file-preview img {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 10px;
+            border: 2px solid var(--card-border);
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn-group button {
+            flex: 1;
+        }
+        
+        .instruction-box {
+            background: rgba(30, 34, 45, 0.6);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .instruction-box ol {
+            padding-left: 20px;
+            margin: 15px 0;
+        }
+        
+        .instruction-box li {
+            margin-bottom: 10px;
+            color: var(--text-gray);
+        }
+        
+        .error-message {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-message {
+            background: rgba(46, 204, 113, 0.1);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-green);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .cicilan-info {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(52, 152, 219, 0.1);
+            border: 1px solid #3498db;
+            border-radius: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .payment-step {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .payment-step::before {
+                display: none;
+            }
+            
+            .btn-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+        <div class="glass-card" style="padding: 30px;">
+            <!-- Step Indicator -->
+            <div class="payment-step">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <div class="step-label">Detail Pembayaran</div>
+                </div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <div class="step-label">Upload Bukti</div>
+                </div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <div class="step-label">Selesai</div>
+                </div>
+            </div>
+            
+            <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <i class="fas fa-credit-card"></i> 
+                <span id="pageTitle">Pembayaran</span>
+            </h2>
+            <p style="color: var(--text-gray); margin-bottom: 25px;" id="pageDescription">
+                Selesaikan pembayaran untuk melanjutkan proses pesanan Anda
+            </p>
+            
+            <!-- Error Container -->
+            <div id="errorContainer"></div>
+            
+            <!-- Payment Info -->
+            <div id="paymentInfo">
+                <div style="text-align: center; padding: 40px;">
+                    <div class="loading-spinner" style="width: 40px; height: 40px;"></div>
+                    <p>Memuat informasi pembayaran...</p>
+                </div>
+            </div>
+            
+            <!-- Payment Summary -->
+            <div class="payment-summary">
+                <h4 style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                    <i class="fas fa-receipt"></i> Rincian Pembayaran
+                </h4>
+                <div id="paymentDetails">
+                    <!-- Will be filled by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Bank Information -->
+            <h4 style="display: flex; align-items: center; gap: 10px; margin-top: 30px;">
+                <i class="fas fa-university"></i> Rekening Tujuan
+            </h4>
+            <div class="bank-info">
+                <h3 style="text-align: center; color: var(--accent-green);">BSI (Bank Syariah Indonesia)</h3>
+                <div class="bank-number" id="bankNumber">7123 4567 89</div>
+                <p style="text-align: center;">a.n Berkah Farm Amanah</p>
+                
+                <div style="text-align: center; margin-top: 15px;">
+                    <button onclick="copyBankNumber()" style="background: rgba(212, 252, 121, 0.1); border: 1px solid var(--accent-green); color: var(--accent-green); padding: 8px 15px; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">
+                        <i class="far fa-copy"></i> Salin Nomor Rekening
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Cicilan Info (if applicable) -->
+            <div id="cicilanInfo" class="cicilan-info">
+                <h4 style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; color: #3498db;">
+                    <i class="fas fa-calendar-check"></i> Informasi Cicilan
+                </h4>
+                <p style="color: var(--text-gray); font-size: 0.9rem;">
+                    Setelah DP berhasil, Anda akan membayar cicilan bulanan sesuai jadwal.
+                    Anda dapat memantau cicilan di halaman "Cicilan Saya".
+                </p>
+            </div>
+            
+            <!-- Instructions -->
+            <div class="instruction-box">
+                <h5 style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px;">
+                    <i class="fas fa-info-circle"></i> Petunjuk Pembayaran:
+                </h5>
+                <ol>
+                    <li>Transfer tepat sesuai nominal ke rekening di atas</li>
+                    <li>Simpan bukti transfer Anda</li>
+                    <li>Upload bukti transfer di form bawah</li>
+                    <li>Tunggu konfirmasi dari admin (1x24 jam)</li>
+                    <li>Cek status pembayaran di "Pesanan Saya"</li>
+                </ol>
+                <p style="color: #f1c40f; font-size: 0.9rem; margin-top: 10px;">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    <strong>Penting:</strong> Transfer sebelum <span id="deadlineTime">24 jam</span> untuk menghindari pembatalan otomatis.
+                </p>
+            </div>
+            
+            <!-- Upload Form -->
+            <form id="formPembayaran" enctype="multipart/form-data">
+                <input type="hidden" id="pesananId">
+                <input type="hidden" id="metodePembayaran">
+                
+                <h4 style="display: flex; align-items: center; gap: 10px; margin-top: 30px;">
+                    <i class="fas fa-file-upload"></i> Upload Bukti Transfer
+                </h4>
+                
+                <!-- File Upload Area -->
+                <div class="file-upload-area" onclick="document.getElementById('buktiFile').click()" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <h4>Klik untuk Upload Bukti Transfer</h4>
+                    <p style="color: var(--text-gray); margin: 10px 0;">Seret file atau klik untuk memilih</p>
+                    <p style="font-size: 0.9rem; color: var(--text-gray);">Format: JPG, PNG, PDF (Maksimal 5MB)</p>
+                    <input type="file" id="buktiFile" accept="image/*,.pdf" style="display: none;" onchange="previewFile()">
+                </div>
+                
+                <!-- File Preview -->
+                <div class="file-preview" id="filePreview" style="display: none;">
+                    <img id="previewImage" src="" alt="Preview Bukti Transfer">
+                    <div style="margin-top: 15px;">
+                        <button type="button" onclick="removeFile()" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">
+                            <i class="fas fa-trash"></i> Hapus File
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="btn-group">
+                    <button type="button" onclick="goBack()" 
+                            style="padding: 15px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-gray); border-radius: 10px; cursor: pointer; font-weight: 600;">
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </button>
+                    <button type="submit" class="btn-primary" id="submitBtn" style="padding: 15px;">
+                        <i class="fas fa-paper-plane"></i> <span id="submitText">KIRIM BUKTI</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        // ==========================================
+        // 1. INITIALIZATION
+        // ==========================================
+        const urlParams = new URLSearchParams(window.location.search);
+        const pesananId = urlParams.get('id_pesanan') || urlParams.get('id');
+        const total = urlParams.get('total');
+        const metode = urlParams.get('metode') || 'cash';
+        
+        let isCicilan = false;
+        let dpNominal = 0;
+        let totalHarga = 0;
+        
+        // ==========================================
+        // 2. HELPER FUNCTIONS
+        // ==========================================
+        function formatRupiah(amount) {
+            return parseInt(amount || 0).toLocaleString('id-ID');
+        }
+        
+        function showError(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="error-message">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <div>${message}</div>
+                </div>
+            `;
+            
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            const errorContainer = document.getElementById('errorContainer');
+            errorContainer.innerHTML = `
+                <div class="success-message">
+                    <i class="fas fa-check-circle"></i>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+        
+        function updateStep(step) {
+            // Reset all steps
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            
+            // Activate steps up to current step
+            for (let i = 1; i <= step; i++) {
+                document.getElementById(`step${i}`).classList.add('active');
+            }
+        }
+        
+        function copyBankNumber() {
+            const bankNumber = document.getElementById('bankNumber').textContent;
+            navigator.clipboard.writeText(bankNumber.replace(/\s/g, ''))
+                .then(() => {
+                    showSuccess('Nomor rekening berhasil disalin!');
+                })
+                .catch(err => {
+                    console.error('Error copying: ', err);
+                });
+        }
+        
+        function previewFile() {
+            const fileInput = document.getElementById('buktiFile');
+            const preview = document.getElementById('filePreview');
+            const previewImage = document.getElementById('previewImage');
+            const uploadArea = document.getElementById('uploadArea');
+            
+            if (fileInput.files && fileInput.files[0]) {
+                const file = fileInput.files[0];
+                
+                // Validasi ukuran file
+                if (file.size > 5 * 1024 * 1024) {
+                    showError('Ukuran file maksimal 5MB');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Validasi tipe file
+                const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+                if (!validTypes.includes(file.type)) {
+                    showError('Format file harus JPG, PNG, atau PDF');
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Update step
+                updateStep(2);
+                
+                // Hide upload area
+                uploadArea.style.display = 'none';
+                
+                // Show preview
+                preview.style.display = 'block';
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImage.src = e.target.result;
+                        previewImage.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    previewImage.style.display = 'none';
+                    preview.innerHTML = `
+                        <div style="padding: 30px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+                            <i class="fas fa-file-pdf" style="font-size: 3rem; color: #e74c3c;"></i>
+                            <h4 style="margin: 15px 0;">${file.name}</h4>
+                            <p style="color: var(--text-gray);">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button type="button" onclick="removeFile()" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-size: 0.9rem;">
+                                <i class="fas fa-trash"></i> Hapus File
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        function removeFile() {
+            document.getElementById('buktiFile').value = '';
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('uploadArea').style.display = 'block';
+            updateStep(1);
+        }
+        
+        function goBack() {
+            window.history.back();
+        }
+        
+        // ==========================================
+        // 3. LOAD PAYMENT INFO
+        // ==========================================
+        async function loadPaymentInfo() {
+            try {
+                // Set deadline time
+                const deadline = new Date();
+                deadline.setHours(deadline.getHours() + 24);
+                document.getElementById('deadlineTime').textContent = deadline.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                document.getElementById('pesananId').value = pesananId;
+                document.getElementById('metodePembayaran').value = metode;
+                
+                if (pesananId) {
+                    // Load from API
+                    const response = await fetch(`http://localhost:3000/api/pesanan/${pesananId}/cicilan`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.pesanan) {
+                            const pesanan = data.pesanan;
+                            isCicilan = pesanan.metode_bayar === 'cicilan';
+                            totalHarga = pesanan.total_harga;
+                            
+                            if (isCicilan) {
+                                // Set for cicilan
+                                dpNominal = pesanan.dp_nominal || Math.round((totalHarga * 30) / 100);
+                                document.getElementById('pageTitle').textContent = 'Pembayaran Down Payment';
+                                document.getElementById('pageDescription').textContent = 'Selesaikan pembayaran DP untuk melanjutkan proses pesanan Anda';
+                                document.getElementById('cicilanInfo').style.display = 'block';
+                                document.getElementById('submitText').textContent = 'KIRIM BUKTI DP';
+                                
+                                displayCicilanDetails(pesanan, data.cicilan || []);
+                            } else {
+                                // Set for cash
+                                dpNominal = totalHarga;
+                                document.getElementById('pageTitle').textContent = 'Pembayaran Lunas';
+                                document.getElementById('pageDescription').textContent = 'Selesaikan pembayaran penuh untuk melanjutkan proses pesanan Anda';
+                                document.getElementById('submitText').textContent = 'KIRIM BUKTI PEMBAYARAN';
+                                
+                                displayCashDetails(pesanan);
+                            }
+                        }
+                    } else {
+                        // Fallback to simple mode
+                        setupSimpleMode();
+                    }
+                } else if (total) {
+                    // Simple mode (from old pembayaran.html)
+                    setupSimpleMode();
+                } else {
+                    showError('Data pembayaran tidak valid');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard-user.html';
+                    }, 3000);
+                }
+                
+                updateStep(1);
+                
+            } catch (error) {
+                console.error('Error loading payment info:', error);
+                setupSimpleMode();
+            }
+        }
+        
+        function setupSimpleMode() {
+            // For backward compatibility with old pembayaran.html
+            totalHarga = parseInt(total) || 0;
+            dpNominal = totalHarga;
+            
+            document.getElementById('paymentDetails').innerHTML = `
+                <div class="summary-item">
+                    <span>Total Pembayaran:</span>
+                    <span>Rp ${formatRupiah(totalHarga)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Metode:</span>
+                    <span>Lunas Sekaligus</span>
+                </div>
+                <div class="summary-item">
+                    <span>Nominal Bayar:</span>
+                    <span style="font-weight: bold; color: var(--accent-green); font-size: 1.5rem;">
+                        Rp ${formatRupiah(totalHarga)}
+                    </span>
+                </div>
+            `;
+            
+            document.getElementById('paymentInfo').innerHTML = `
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+                    <h3 style="margin: 0 0 10px 0;">Pesanan #${pesananId || 'Baru'}</h3>
+                    <p style="color: var(--text-gray); margin: 0;">${new Date().toLocaleDateString('id-ID')}</p>
+                </div>
+            `;
+        }
+        
+        function displayCashDetails(pesanan) {
+            document.getElementById('paymentDetails').innerHTML = `
+                <div class="summary-item">
+                    <span>Total Pesanan:</span>
+                    <span>Rp ${formatRupiah(pesanan.total_harga)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Metode Pembayaran:</span>
+                    <span style="color: var(--accent-green);">Lunas Sekaligus</span>
+                </div>
+                <div class="summary-item">
+                    <span>Nominal Bayar:</span>
+                    <span style="font-weight: bold; color: var(--accent-green); font-size: 1.5rem;">
+                        Rp ${formatRupiah(pesanan.total_harga)}
+                    </span>
+                </div>
+            `;
+            
+            document.getElementById('paymentInfo').innerHTML = `
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="margin: 0 0 5px 0;">Pesanan #${pesanan.id}</h3>
+                            <p style="color: var(--text-gray); margin: 0;">${new Date(pesanan.tanggal_pemesanan).toLocaleDateString('id-ID')}</p>
+                        </div>
+                        <div>
+                            <span class="badge bg-warning" style="font-size: 0.9rem;">
+                                Belum Bayar
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayCicilanDetails(pesanan, cicilanList) {
+            const sisa = pesanan.total_harga - dpNominal;
+            const cicilanPerBulan = Math.round((sisa / 12) / 1000) * 1000;
+            
+            document.getElementById('paymentDetails').innerHTML = `
+                <div class="summary-item">
+                    <span>Total Pesanan:</span>
+                    <span>Rp ${formatRupiah(pesanan.total_harga)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Down Payment (30%):</span>
+                    <span>Rp ${formatRupiah(dpNominal)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Sisa Pembayaran:</span>
+                    <span>Rp ${formatRupiah(sisa)}</span>
+                </div>
+                <div class="summary-item">
+                    <span>Cicilan (12x):</span>
+                    <span>Rp ${formatRupiah(cicilanPerBulan)}/bulan</span>
+                </div>
+                <div class="summary-item">
+                    <span>Nominal DP:</span>
+                    <span style="font-weight: bold; color: var(--accent-green); font-size: 1.5rem;">
+                        Rp ${formatRupiah(dpNominal)}
+                    </span>
+                </div>
+            `;
+            
+            document.getElementById('paymentInfo').innerHTML = `
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <h3 style="margin: 0 0 5px 0;">Pesanan #${pesanan.id}</h3>
+                            <p style="color: var(--text-gray); margin: 0;">${new Date(pesanan.tanggal_pemesanan).toLocaleDateString('id-ID')}</p>
+                        </div>
+                        <div>
+                            <span class="badge bg-warning" style="font-size: 0.9rem;">
+                                Belum Bayar
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // ==========================================
+        // 4. FORM SUBMIT
+        // ==========================================
+        document.getElementById('formPembayaran').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const fileInput = document.getElementById('buktiFile');
+            if (!fileInput.files[0]) {
+                showError('Pilih file bukti transfer terlebih dahulu');
+                return;
+            }
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<span class="loading-spinner"></span> Mengupload...';
+            submitBtn.disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('bukti', fileInput.files[0]);
+                
+                let endpoint, successMessage, redirectUrl;
+                
+                if (isCicilan) {
+                    // Upload DP for cicilan
+                    endpoint = `http://localhost:3000/api/pesanan/${pesananId}/dp`;
+                    successMessage = 'Bukti DP berhasil diupload!';
+                    redirectUrl = `dashboard-cicilan.html?id=${pesananId}`;
+                } else if (pesananId) {
+                    // Check if this is pelunasan for cash
+                    endpoint = `http://localhost:3000/api/pesanan/${pesananId}/dp`;
+                    successMessage = 'Bukti pembayaran berhasil diupload!';
+                    redirectUrl = 'dashboard-user.html';
+                } else {
+                    // Old simple mode
+                    formData.append('id_pesanan', pesananId || 'new');
+                    endpoint = `http://localhost:3000/api/bayar`;
+                    successMessage = 'Bukti pembayaran berhasil diupload!';
+                    redirectUrl = 'dashboard-user.html';
+                }
+                
+                console.log(`📤 Upload ke: ${endpoint}`);
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || result.message || 'Gagal upload');
+                }
+                
+                // Success
+                updateStep(3);
+                showSuccess(successMessage);
+                
+                setTimeout(() => {
+                    window.location.href = redirectUrl;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('❌ Error upload:', error);
+                showError(`Gagal upload: ${error.message}`);
+                
+                // Reset button
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // ==========================================
+        // 5. DRAG AND DROP
+        // ==========================================
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('buktiFile');
+        
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+            document.body.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        // Highlight drop area
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        // Handle dropped files
+        uploadArea.addEventListener('drop', handleDrop, false);
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        function highlight() {
+            uploadArea.style.borderColor = 'var(--accent-green)';
+            uploadArea.style.background = 'rgba(212, 252, 121, 0.1)';
+        }
+        
+        function unhighlight() {
+            uploadArea.style.borderColor = 'var(--card-border)';
+            uploadArea.style.background = '';
+        }
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                fileInput.files = files;
+                previewFile();
+            }
+        }
+        
+        // ==========================================
+        // 6. INITIAL LOAD
+        // ==========================================
+        loadPaymentInfo();
+    </script>
+</body>
+</html>
