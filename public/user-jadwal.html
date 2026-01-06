@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Pemotongan Saya - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .jadwal-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--card-border);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            transition: transform 0.3s;
+        }
+        
+        .jadwal-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-green);
+        }
+
+        .hewan-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            object-fit: cover;
+        }
+
+        .info-section { flex: 1; }
+        
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .lunas { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        .belum { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; }
+
+        /* Locked State */
+        .locked-content {
+            filter: blur(4px);
+            user-select: none;
+            opacity: 0.5;
+        }
+        
+        .lock-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.4);
+            border-radius: 15px;
+            z-index: 10;
+        }
+
+        .schedule-box {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .schedule-item i { width: 20px; color: var(--accent-green); }
+        .schedule-item div { font-size: 0.8rem; color: var(--text-gray); }
+        .schedule-item strong { display: block; font-size: 0.95rem; color: white; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem;">
+        <div style="margin-bottom: 30px;">
+            <h2 style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-calendar-check"></i> Jadwal Pemotongan Saya
+            </h2>
+            <p style="color: var(--text-gray);">Pantau jadwal penyembelihan hewan kurban/aqiqah Anda di sini.</p>
+        </div>
+
+        <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <button class="btn-primary" onclick="renderJadwal('all')" style="padding: 8px 20px;">Semua</button>
+            <button class="btn-secondary" onclick="renderJadwal('siap')" style="padding: 8px 20px;">Siap Potong</button>
+        </div>
+
+        <div id="jadwalList">
+            <div style="text-align: center; padding: 50px;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--accent-green);"></i>
+                <p>Memuat jadwal...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        let allOrders = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const userId = localStorage.getItem('user_id');
+            if (!userId) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/pesanan?user_id=${userId}`);
+                allOrders = await res.json();
+                renderJadwal('all');
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('jadwalList').innerHTML = '<p>Gagal memuat data.</p>';
+            }
+        });
+
+        function renderJadwal(filter) {
+            const container = document.getElementById('jadwalList');
+            container.innerHTML = '';
+
+            // Filter logic
+            let data = allOrders;
+            if(filter === 'siap') {
+                data = allOrders.filter(o => o.status_pembayaran === 'lunas');
+            }
+
+            if (data.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 40px; color: var(--text-gray);">
+                        <i class="fas fa-calendar-times" style="font-size: 3rem; margin-bottom: 10px;"></i>
+                        <p>Belum ada jadwal pesanan yang tersedia.</p>
+                    </div>`;
+                return;
+            }
+
+            data.forEach(order => {
+                const isLunas = order.status_pembayaran === 'lunas';
+                const tanggalPotong = order.jadwal_pemotongan ? new Date(order.jadwal_pemotongan).toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' }) : '-';
+                const jamPotong = order.jam_potong ? order.jam_potong.substring(0, 5) + ' WIB' : 'Menunggu Admin';
+                const namaTukang = order.nama_tukang || 'Sedang ditetapkan';
+                
+                // Jika belum lunas, konten jadwal diblur/dikunci
+                const lockOverlay = !isLunas ? `
+                    <div class="lock-overlay">
+                        <i class="fas fa-lock" style="font-size: 2rem; color: #e74c3c; margin-bottom: 10px;"></i>
+                        <strong style="color: white;">Jadwal Terkunci</strong>
+                        <p style="color: #ddd; font-size: 0.9rem; margin-top: 5px;">Lunasi tagihan untuk melihat detail</p>
+                        <a href="pembayaran.html?id=${order.id}" class="btn-primary" style="margin-top: 10px; font-size: 0.8rem;">Bayar Sekarang</a>
+                    </div>
+                ` : '';
+
+                const blurClass = !isLunas ? 'locked-content' : '';
+
+                container.innerHTML += `
+                    <div class="jadwal-card" style="position: relative; overflow: hidden;">
+                        <img src="/uploads/hewan/${order.gambar}" class="hewan-thumb" onerror="this.src='images/default-hewan.jpg'">
+                        
+                        <div class="info-section">
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <div>
+                                    <h3 style="margin: 0; color: white;">#${order.id} - ${order.jenis_hewan}</h3>
+                                    <span class="status-badge ${isLunas ? 'lunas' : 'belum'}">
+                                        ${isLunas ? 'LUNAS - SIAP POTONG' : 'BELUM LUNAS'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div style="position: relative;">
+                                ${lockOverlay}
+                                <div class="schedule-box ${blurClass}">
+                                    <div class="schedule-item">
+                                        <div><i class="fas fa-calendar-day"></i> Tanggal Pemotongan</div>
+                                        <strong>${tanggalPotong}</strong>
+                                    </div>
+                                    <div class="schedule-item">
+                                        <div><i class="far fa-clock"></i> Estimasi Jam</div>
+                                        <strong style="color: var(--accent-green);">${jamPotong}</strong>
+                                    </div>
+                                    <div class="schedule-item">
+                                        <div><i class="fas fa-user-check"></i> Petugas Penyembelih</div>
+                                        <strong>${namaTukang}</strong>
+                                    </div>
+                                    <div class="schedule-item">
+                                        <div><i class="fas fa-map-marker-alt"></i> Lokasi/Metode</div>
+                                        <strong>${order.metode_pengambilan === 'diantar' ? 'Diantar ke Lokasi' : 'Ambil di Peternakan'}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
