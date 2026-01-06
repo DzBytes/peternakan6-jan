@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Stok Hewan - Admin Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Modal Styling */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: var(--accent-green);
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-gray);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-modal:hover {
+            color: var(--accent-green);
+        }
+
+        /* Button Styles */
+        .btn-edit {
+            background: rgba(52, 152, 219, 0.2);
+            border: 1px solid #3498db;
+            color: #3498db;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-edit:hover {
+            background: rgba(52, 152, 219, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-delete {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid #e74c3c;
+            color: #e74c3c;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+
+        .btn-delete:hover {
+            background: rgba(231, 76, 60, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-update-stok {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid #2ecc71;
+            color: #2ecc71;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+
+        .btn-update-stok:hover {
+            background: rgba(46, 204, 113, 0.4);
+            transform: translateY(-2px);
+        }
+
+        /* Form Group in Modal */
+        .modal-form-group {
+            margin-bottom: 20px;
+        }
+
+        .modal-form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+
+        .modal-form-group input,
+        .modal-form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            outline: none;
+            font-size: 0.9rem;
+        }
+
+        .modal-form-group input:focus,
+        .modal-form-group textarea:focus {
+            border-color: var(--accent-green);
+        }
+
+        .modal-form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Stok Badge Styles */
+        .stok-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .stok-aman {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+
+        .stok-menipis {
+            background: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+            border: 1px solid #f1c40f;
+        }
+
+        .stok-habis {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        /* Image Preview */
+        .image-preview-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 2px dashed var(--card-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-placeholder {
+            color: var(--text-gray);
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* Action Buttons Container */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* Search and Filter */
+        .search-filter {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filter-select {
+            min-width: 150px;
+        }
+
+        /* Stok Adjustment */
+        .stok-adjustment {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stok-input {
+            width: 80px;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            text-align: center;
+        }
+
+        .stok-btn {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .stok-btn-increase {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+
+        .stok-btn-decrease {
+            background: rgba(241, 196, 15, 0.2);
+            color: #f1c40f;
+            border: 1px solid #f1c40f;
+        }
+
+        .stok-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem;">
+        <div style="margin-bottom: 30px;">
+            <h2 style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-boxes"></i> Kelola Stok Hewan
+            </h2>
+            <p style="color: var(--text-gray);">Kelola data hewan qurban & aqiqah di Berkah Farm</p>
+        </div>
+
+        <!-- Search and Filter -->
+        <div class="search-filter">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 Cari hewan..." style="width: 100%;">
+            </div>
+            <div class="filter-select">
+                <select id="filterStok" style="width: 100%;">
+                    <option value="all">Semua Stok</option>
+                    <option value="aman">Stok Aman (>10)</option>
+                    <option value="menipis">Stok Menipis (1-10)</option>
+                    <option value="habis">Stok Habis (0)</option>
+                </select>
+            </div>
+            <button onclick="openTambahModal()" class="btn-primary" style="width: auto; padding: 10px 20px;">
+                <i class="fas fa-plus"></i> Tambah Hewan Baru
+            </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+            
+            <!-- Form Tambah/Edit Hewan (Modal) -->
+            <div class="glass-card" id="formContainer">
+                <h3><i class="fas fa-info-circle"></i> Informasi Stok</h3>
+                <hr style="border-color: var(--card-border); margin: 15px 0;">
+                
+                <div id="stokSummary">
+                    <p>Memuat data stok...</p>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <h4><i class="fas fa-lightbulb"></i> Tips Pengelolaan Stok:</h4>
+                    <ul style="color: var(--text-gray); font-size: 0.9rem; padding-left: 20px;">
+                        <li>Update stok setelah pemesanan atau restok</li>
+                        <li>Perhatikan hewan dengan stok menipis (<span style="color: #f1c40f;">kuning</span>)</li>
+                        <li>Hewan habis (<span style="color: #e74c3c;">merah</span>) akan hilang dari katalog</li>
+                        <li>Gunakan filter untuk melihat kondisi stok</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Tabel Data Stok -->
+            <div class="glass-card">
+                <h3 style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>Data Stok Saat Ini</span>
+                    <span id="totalHewan" style="font-size: 0.9rem; color: var(--text-gray);">Memuat...</span>
+                </h3>
+                
+                <div style="overflow-x: auto;">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Foto</th>
+                                <th>Jenis Hewan</th>
+                                <th>Harga</th>
+                                <th>Stok</th>
+                                <th>Status</th>
+                                <th style="text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelStok">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 40px;">
+                                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: var(--accent-green);"></i>
+                                    <p style="margin-top: 10px; color: var(--text-gray);">Memuat data stok...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Tambah/Edit Hewan -->
+    <div id="modalHewan" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Tambah Hewan Baru</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <form id="formModal" enctype="multipart/form-data">
+                <input type="hidden" id="modalId">
+                
+                <div class="image-preview-container">
+                    <img id="imagePreview" class="image-preview" src="" style="display: none;">
+                    <div id="imagePlaceholder" class="image-placeholder">
+                        <i class="fas fa-image" style="font-size: 48px; margin-bottom: 10px;"></i>
+                        <p>Preview gambar akan muncul di sini</p>
+                    </div>
+                </div>
+                
+                <div class="modal-form-group">
+                    <label for="modalJenis">Jenis Hewan *</label>
+                    <input type="text" id="modalJenis" placeholder="Contoh: Kambing Etawa Super" required>
+                </div>
+                
+                <div class="modal-form-group">
+                    <label for="modalHarga">Harga (Rp) *</label>
+                    <input type="number" id="modalHarga" placeholder="3500000" min="0" required>
+                </div>
+                
+                <div class="modal-form-group">
+                    <label for="modalStok">Stok Awal (Ekor) *</label>
+                    <input type="number" id="modalStok" placeholder="10" min="0" required>
+                </div>
+                
+                <div class="modal-form-group">
+                    <label for="modalDeskripsi">Deskripsi *</label>
+                    <textarea id="modalDeskripsi" placeholder="Deskripsi detail hewan: berat, umur, kondisi, dll." required></textarea>
+                </div>
+                
+                <div class="modal-form-group">
+                    <label for="modalGambar">Foto Hewan *</label>
+                    <input type="file" id="modalGambar" accept="image/*">
+                    <small style="color: var(--text-gray);">Format: JPG/PNG, max 5MB</small>
+                </div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn-secondary" onclick="closeModal()" style="padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-gray); border-radius: 8px; cursor: pointer;">
+                        Batal
+                    </button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 30px;">
+                        <span id="modalSubmitText">Simpan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Stok Cepat -->
+    <div id="modalStok" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalStokTitle">Edit Stok</h3>
+                <button class="close-modal" onclick="closeStokModal()">&times;</button>
+            </div>
+            
+            <form id="formStok">
+                <input type="hidden" id="stokId">
+                
+                <div class="modal-form-group">
+                    <label>Jenis Hewan</label>
+                    <input type="text" id="stokJenis" readonly style="background: rgba(0,0,0,0.3); color: var(--text-gray);">
+                </div>
+                
+                <div class="modal-form-group">
+                    <label>Stok Saat Ini</label>
+                    <input type="number" id="stokSaatIni" readonly style="background: rgba(0,0,0,0.3); color: var(--accent-green); font-weight: bold; font-size: 1.2rem;">
+                </div>
+                
+                <div class="modal-form-group">
+                    <label>Aksi</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="stok-btn stok-btn-increase" onclick="changeStokAction('increase')">
+                            <i class="fas fa-plus"></i> Tambah Stok
+                        </button>
+                        <button type="button" class="stok-btn stok-btn-decrease" onclick="changeStokAction('decrease')">
+                            <i class="fas fa-minus"></i> Kurangi Stok
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="modal-form-group" id="stokAdjustmentContainer" style="display: none;">
+                    <label>Jumlah</label>
+                    <div class="stok-adjustment">
+                        <button type="button" onclick="adjustStok(-10)">-10</button>
+                        <button type="button" onclick="adjustStok(-5)">-5</button>
+                        <input type="number" id="stokJumlah" class="stok-input" value="1" min="1">
+                        <button type="button" onclick="adjustStok(5)">+5</button>
+                        <button type="button" onclick="adjustStok(10)">+10</button>
+                    </div>
+                </div>
+                
+                <div class="modal-form-group" id="stokKeteranganContainer" style="display: none;">
+                    <label for="stokKeterangan">Keterangan</label>
+                    <input type="text" id="stokKeterangan" placeholder="Contoh: Restok, Pemesanan, dll.">
+                </div>
+                
+                <div class="action-buttons">
+                    <button type="button" class="btn-secondary" onclick="closeStokModal()" style="padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-gray); border-radius: 8px; cursor: pointer;">
+                        Batal
+                    </button>
+                    <button type="submit" class="btn-primary" style="padding: 10px 30px;">
+                        Update Stok
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        // Global variables
+        let hewanData = [];
+        let currentStokAction = '';
+        let selectedHewanId = null;
+
+        // ==========================================
+        // 1. FUNGSI LOAD DATA & RENDER TABEL
+        // ==========================================
+        async function loadHewan() {
+            try {
+                const response = await fetch('http://localhost:3000/api/hewan');
+                hewanData = await response.json();
+                
+                renderTabel(hewanData);
+                updateStokSummary(hewanData);
+                updateTotalHewan(hewanData);
+                
+            } catch (error) {
+                console.error('❌ Gagal load data:', error);
+                document.getElementById('tabelStok').innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #e74c3c;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Gagal memuat data. Periksa koneksi server.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderTabel(data) {
+            const tbody = document.getElementById('tabelStok');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px;">
+                            <i class="fas fa-box-open" style="font-size: 48px; color: var(--text-gray); margin-bottom: 10px;"></i>
+                            <p style="color: var(--text-gray);">Belum ada data hewan.</p>
+                            <button onclick="openTambahModal()" class="btn-primary" style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Tambah Hewan Pertama
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            data.forEach(item => {
+                // Determine stok status
+                let stokClass = '';
+                let stokStatus = '';
+                
+                if (item.stok <= 0) {
+                    stokClass = 'stok-habis';
+                    stokStatus = 'HABIS';
+                } else if (item.stok <= 3) {
+                    stokClass = 'stok-menipis';
+                    stokStatus = 'MENIPIS';
+                } else {
+                    stokClass = 'stok-aman';
+                    stokStatus = 'AMAN';
+                }
+                
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <div style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden;">
+                            <img src="/uploads/hewan/${item.gambar || 'default.jpg'}" 
+                                style="width: 100%; height: 100%; object-fit: cover;"
+                                onerror="this.src='https://placehold.co/100x100?text=No+Image'"
+                                alt="${item.jenis_hewan}">
+                        </div>
+                    </td>
+                    <td>
+                        <strong>${item.jenis_hewan}</strong>
+                        <div style="font-size: 0.8rem; color: var(--text-gray); margin-top: 3px;">
+                            ${item.deskripsi ? item.deskripsi.substring(0, 50) + '...' : 'Tidak ada deskripsi'}
+                        </div>
+                    </td>
+                    <td style="font-weight: bold; color: var(--accent-green);">
+                        Rp ${parseInt(item.harga).toLocaleString('id-ID')}
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.2rem; font-weight: bold; color: ${item.stok <= 0 ? '#e74c3c' : (item.stok <= 3 ? '#f1c40f' : '#2ecc71')}">
+                                ${item.stok}
+                            </span>
+                            <span class="stok-badge ${stokClass}">${stokStatus}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span style="font-size: 0.8rem; color: ${item.stok <= 0 ? '#e74c3c' : (item.stok <= 3 ? '#f1c40f' : '#2ecc71')}">
+                            ${item.stok <= 0 ? '❌ Tidak tersedia' : 
+                            item.stok <= 3 ? '⚠️ Hampir habis' : 
+                            '✅ Tersedia'}
+                        </span>
+                    </td>
+                    <td style="text-align: center;">
+                        <div style="display: flex; gap: 5px; justify-content: center;">
+                            <button onclick="openEditModal(${item.id})" class="btn-edit" title="Edit Data Lengkap">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="openStokModal(${item.id})" class="btn-update-stok" title="Edit Stok">
+                                <i class="fas fa-box"></i>
+                            </button>
+                            <button onclick="hapusHewan(${item.id}, '${item.jenis_hewan.replace(/'/g, "\\'")}')" 
+                                    class="btn-delete" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // ==========================================
+        // 2. FUNGSI MODAL TAMBAH/EDIT HEWAN
+        // ==========================================
+        function openTambahModal() {
+            document.getElementById('modalTitle').textContent = 'Tambah Hewan Baru';
+            document.getElementById('modalSubmitText').textContent = 'Simpan';
+            document.getElementById('modalId').value = '';
+            document.getElementById('modalJenis').value = '';
+            document.getElementById('modalHarga').value = '';
+            document.getElementById('modalStok').value = '';
+            document.getElementById('modalDeskripsi').value = '';
+            document.getElementById('modalGambar').value = '';
+            
+            // Reset preview
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imagePlaceholder').style.display = 'block';
+            
+            document.getElementById('modalHewan').style.display = 'flex';
+        }
+
+        function openEditModal(id) {
+            const hewan = hewanData.find(h => h.id == id);
+            if (!hewan) return;
+            
+            document.getElementById('modalTitle').textContent = 'Edit Data Hewan';
+            document.getElementById('modalSubmitText').textContent = 'Update';
+            document.getElementById('modalId').value = hewan.id;
+            document.getElementById('modalJenis').value = hewan.jenis_hewan;
+            document.getElementById('modalHarga').value = hewan.harga;
+            document.getElementById('modalStok').value = hewan.stok;
+            document.getElementById('modalDeskripsi').value = hewan.deskripsi;
+            
+            // Set image preview if exists
+            if (hewan.gambar) {
+                document.getElementById('imagePreview').src = `/uploads/hewan/${hewan.gambar}`;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('imagePlaceholder').style.display = 'none';
+            } else {
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('imagePlaceholder').style.display = 'block';
+            }
+            
+            document.getElementById('modalHewan').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('modalHewan').style.display = 'none';
+        }
+
+        // ==========================================
+        // 3. FUNGSI MODAL EDIT STOK CEPAT
+        // ==========================================
+        function openStokModal(id) {
+            const hewan = hewanData.find(h => h.id == id);
+            if (!hewan) return;
+            
+            selectedHewanId = id;
+            document.getElementById('stokId').value = hewan.id;
+            document.getElementById('stokJenis').value = hewan.jenis_hewan;
+            document.getElementById('stokSaatIni').value = hewan.stok;
+            document.getElementById('modalStokTitle').textContent = `Edit Stok ${hewan.jenis_hewan}`;
+            
+            // Reset form
+            document.getElementById('stokAdjustmentContainer').style.display = 'none';
+            document.getElementById('stokKeteranganContainer').style.display = 'none';
+            document.getElementById('stokJumlah').value = 1;
+            document.getElementById('stokKeterangan').value = '';
+            
+            document.getElementById('modalStok').style.display = 'flex';
+        }
+
+        function closeStokModal() {
+            document.getElementById('modalStok').style.display = 'none';
+            selectedHewanId = null;
+            currentStokAction = '';
+        }
+
+        function changeStokAction(action) {
+            currentStokAction = action;
+            document.getElementById('stokAdjustmentContainer').style.display = 'block';
+            document.getElementById('stokKeteranganContainer').style.display = 'block';
+            
+            if (action === 'increase') {
+                document.getElementById('stokJumlah').value = 1;
+                document.getElementById('stokKeterangan').placeholder = 'Contoh: Restok dari supplier';
+            } else {
+                document.getElementById('stokJumlah').value = 1;
+                document.getElementById('stokKeterangan').placeholder = 'Contoh: Terjual, Rusak, dll.';
+            }
+        }
+
+        function adjustStok(value) {
+            const input = document.getElementById('stokJumlah');
+            let currentValue = parseInt(input.value) || 0;
+            currentValue += value;
+            
+            if (currentValue < 1) currentValue = 1;
+            input.value = currentValue;
+        }
+
+// ==========================================
+// 4. FUNGSI FORM SUBMIT (CREATE/UPDATE) - DIPERBAIKI
+// ==========================================
+document.getElementById('formModal').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const id = document.getElementById('modalId').value;
+    const isEditMode = !!id; // true jika edit, false jika tambah baru
+    
+    // Buat FormData untuk mengirim file
+    const formData = new FormData();
+    formData.append('jenis', document.getElementById('modalJenis').value);
+    formData.append('harga', document.getElementById('modalHarga').value);
+    formData.append('stok', document.getElementById('modalStok').value);
+    formData.append('deskripsi', document.getElementById('modalDeskripsi').value);
+    
+    // Tambahkan gambar jika ada file baru
+    const gambarFile = document.getElementById('modalGambar').files[0];
+    if (gambarFile) {
+        formData.append('gambar', gambarFile);
+    }
+    
+    try {
+        let url, method;
+        
+        if (isEditMode) {
+            // EDIT MODE - PUT request
+            url = `http://localhost:3000/api/hewan/${id}`;
+            method = 'PUT';
+        } else {
+            // CREATE MODE - POST request
+            url = 'http://localhost:3000/api/hewan';
+            method = 'POST';
+        }
+        
+        const response = await fetch(url, {
+            method: method,
+            body: formData // Jangan set Content-Type header, biarkan browser yang atur
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`✅ ${isEditMode ? 'Data hewan berhasil diupdate!' : 'Hewan baru berhasil ditambahkan!'}`);
+            closeModal();
+            loadHewan(); // Refresh data
+            
+            // Tampilkan notifikasi sukses
+            showNotification('success', 
+                isEditMode ? 'Data Diupdate' : 'Hewan Ditambahkan',
+                isEditMode ? 'Data hewan berhasil diperbarui' : 'Hewan baru berhasil ditambahkan ke katalog');
+                
+        } else {
+            alert(`❌ Gagal: ${result.error || 'Terjadi kesalahan'}`);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('❌ Terjadi kesalahan jaringan. Periksa koneksi server.');
+    }
+});
+
+// ==========================================
+// 5. FUNGSI UPDATE STOK CEPAT - DIPERBAIKI
+// ==========================================
+document.getElementById('formStok').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    if (!currentStokAction) {
+        alert('⚠️ Pilih aksi terlebih dahulu (Tambah atau Kurangi Stok)');
+        return;
+    }
+    
+    const id = document.getElementById('stokId').value;
+    const jumlah = parseInt(document.getElementById('stokJumlah').value) || 0;
+    const keterangan = document.getElementById('stokKeterangan').value;
+    const hewan = hewanData.find(h => h.id == id);
+    
+    if (!hewan) {
+        alert('❌ Data hewan tidak ditemukan');
+        return;
+    }
+    
+    if (jumlah <= 0) {
+        alert('❌ Jumlah harus lebih dari 0');
+        return;
+    }
+    
+    // Hitung stok baru
+    let stokBaru = hewan.stok;
+    if (currentStokAction === 'increase') {
+        stokBaru += jumlah;
+    } else if (currentStokAction === 'decrease') {
+        stokBaru -= jumlah;
+        if (stokBaru < 0) {
+            if (!confirm(`⚠️ Stok akan menjadi negatif (${stokBaru}). Lanjutkan?`)) {
+                return;
+            }
+        }
+    }
+    
+    try {
+        // Kirim request update stok
+        const response = await fetch(`http://localhost:3000/api/hewan/${id}/stok`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
+            body: JSON.stringify({ 
+                stok: stokBaru,
+                keterangan: keterangan || `Update stok: ${currentStokAction} ${jumlah}`
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            alert(`✅ Stok ${hewan.jenis_hewan} berhasil diupdate!\nStok baru: ${stokBaru} ekor`);
+            closeStokModal();
+            loadHewan(); // Refresh data
+            
+            // Tampilkan notifikasi
+            showNotification('success', 'Stok Diupdate', 
+                `${hewan.jenis_hewan}: ${currentStokAction === 'increase' ? '+' : '-'}${jumlah} = ${stokBaru} ekor`);
+                
+        } else {
+            alert(`❌ Gagal update stok: ${result.error || 'Terjadi kesalahan'}`);
+        }
+        
+    } catch (error) {
+        console.error('Error update stok:', error);
+        alert('❌ Terjadi kesalahan jaringan. Periksa koneksi server.');
+    }
+});
+
+        // ==========================================
+        // 5. FUNGSI UPDATE STOK CEPAT
+        // ==========================================
+        document.getElementById('formStok').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentStokAction) {
+                alert('Pilih aksi terlebih dahulu (Tambah atau Kurangi Stok)');
+                return;
+            }
+            
+            const id = document.getElementById('stokId').value;
+            const jumlah = parseInt(document.getElementById('stokJumlah').value) || 0;
+            const keterangan = document.getElementById('stokKeterangan').value;
+            
+            if (jumlah <= 0) {
+                alert('Jumlah harus lebih dari 0');
+                return;
+            }
+            
+            try {
+                // Ambil data hewan saat ini
+                const response = await fetch(`http://localhost:3000/api/hewan/${id}`);
+                const hewan = await response.json();
+                
+                let stokBaru = hewan.stok;
+                if (currentStokAction === 'increase') {
+                    stokBaru += jumlah;
+                } else if (currentStokAction === 'decrease') {
+                    stokBaru -= jumlah;
+                    if (stokBaru < 0) stokBaru = 0;
+                }
+                
+                // Update stok via API
+                const updateResponse = await fetch(`http://localhost:3000/api/hewan/${id}/stok`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        stok: stokBaru,
+                        keterangan: keterangan,
+                        aksi: currentStokAction,
+                        jumlah: jumlah
+                    })
+                });
+                
+                if (updateResponse.ok) {
+                    alert(`✅ Stok berhasil diupdate menjadi ${stokBaru} ekor`);
+                    closeStokModal();
+                    loadHewan(); // Refresh data
+                    
+                    // Tampilkan notifikasi sukses
+                    showNotification('success', 'Stok Diupdate', 
+                        `Stok ${hewan.jenis_hewan} berhasil diupdate: ${currentStokAction === 'increase' ? '+' : '-'}${jumlah} ekor`);
+                } else {
+                    const error = await updateResponse.json();
+                    alert('❌ Gagal update stok: ' + (error.error || 'Terjadi kesalahan'));
+                }
+                
+            } catch (error) {
+                console.error('Error update stok:', error);
+                alert('❌ Terjadi kesalahan jaringan');
+            }
+        });
+
+        // ==========================================
+        // 6. FUNGSI DELETE HEWAN
+        // ==========================================
+        async function hapusHewan(id, nama) {
+            if (!confirm(`⚠️ Yakin ingin menghapus hewan "${nama}"?\n\nData yang dihapus tidak dapat dikembalikan.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/hewan/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    alert(`✅ Hewan "${nama}" berhasil dihapus`);
+                    loadHewan(); // Refresh data
+                    
+                    // Tampilkan notifikasi
+                    showNotification('success', 'Hewan Dihapus', 
+                        `Hewan ${nama} telah berhasil dihapus dari sistem`);
+                } else {
+                    const error = await response.json();
+                    alert('❌ Gagal menghapus: ' + (error.error || 'Terjadi kesalahan'));
+                }
+            } catch (error) {
+                console.error('Error hapus:', error);
+                alert('❌ Terjadi kesalahan jaringan');
+            }
+        }
+
+        // ==========================================
+        // 7. FUNGSI SEARCH & FILTER
+        // ==========================================
+        document.getElementById('searchInput').addEventListener('input', function() {
+            filterHewan();
+        });
+
+        document.getElementById('filterStok').addEventListener('change', function() {
+            filterHewan();
+        });
+
+        function filterHewan() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterValue = document.getElementById('filterStok').value;
+            
+            let filteredData = hewanData.filter(hewan => {
+                // Search filter
+                const matchesSearch = hewan.jenis_hewan.toLowerCase().includes(searchTerm) ||
+                                     hewan.deskripsi.toLowerCase().includes(searchTerm);
+                
+                // Stock filter
+                let matchesFilter = true;
+                if (filterValue === 'aman') {
+                    matchesFilter = hewan.stok > 10;
+                } else if (filterValue === 'menipis') {
+                    matchesFilter = hewan.stok >= 1 && hewan.stok <= 10;
+                } else if (filterValue === 'habis') {
+                    matchesFilter = hewan.stok <= 0;
+                }
+                
+                return matchesSearch && matchesFilter;
+            });
+            
+            renderTabel(filteredData);
+            updateTotalHewan(filteredData);
+        }
+
+        // ==========================================
+        // 8. FUNGSI HELPER
+        // ==========================================
+        function updateStokSummary(data) {
+            const totalStok = data.reduce((sum, item) => sum + item.stok, 0);
+            const stokHabis = data.filter(item => item.stok <= 0).length;
+            const stokMenipis = data.filter(item => item.stok > 0 && item.stok <= 3).length;
+            const stokAman = data.filter(item => item.stok > 3).length;
+            
+            document.getElementById('stokSummary').innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: rgba(46, 204, 113, 0.1); padding: 10px; border-radius: 8px; border: 1px solid #2ecc71;">
+                        <div style="font-size: 0.8rem; color: var(--text-gray);">Total Stok</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #2ecc71;">${totalStok} ekor</div>
+                    </div>
+                    <div style="background: rgba(241, 196, 15, 0.1); padding: 10px; border-radius: 8px; border: 1px solid #f1c40f;">
+                        <div style="font-size: 0.8rem; color: var(--text-gray);">Hampir Habis</div>
+                        <div style="font-size: 1.5rem; font-weight: bold; color: #f1c40f;">${stokMenipis}</div>
+                    </div>
+                </div>
+                <div style="font-size: 0.9rem; color: var(--text-gray);">
+                    <p><i class="fas fa-check-circle" style="color: #2ecc71;"></i> Stok Aman: ${stokAman} jenis</p>
+                    <p><i class="fas fa-exclamation-triangle" style="color: #f1c40f;"></i> Stok Menipis: ${stokMenipis} jenis</p>
+                    <p><i class="fas fa-times-circle" style="color: #e74c3c;"></i> Stok Habis: ${stokHabis} jenis</p>
+                </div>
+            `;
+        }
+
+        function updateTotalHewan(data) {
+            document.getElementById('totalHewan').textContent = `${data.length} jenis hewan`;
+        }
+
+        function showNotification(type, title, message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = `notification-toast ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: var(--card-bg);
+                border: 1px solid var(--card-border);
+                border-radius: 12px;
+                padding: 15px;
+                max-width: 350px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+                backdrop-filter: blur(10px);
+                z-index: 9999;
+                animation: slideUp 0.3s ease;
+                border-left: 4px solid ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#3498db'};
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}" 
+                       style="color: ${type === 'success' ? '#2ecc71' : type === 'error' ? '#e74c3c' : '#3498db'}; font-size: 20px;"></i>
+                    <div>
+                        <strong style="color: var(--text-white);">${title}</strong>
+                        <p style="margin: 5px 0 0 0; color: var(--text-gray); font-size: 0.9rem;">${message}</p>
+                    </div>
+                    <button onclick="this.parentElement.parentElement.remove()" style="margin-left: auto; background: none; border: none; color: var(--text-gray); cursor: pointer;">×</button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+
+        // ==========================================
+        // 9. IMAGE PREVIEW HANDLER
+        // ==========================================
+        document.getElementById('modalGambar').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('imagePreview').src = e.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                    document.getElementById('imagePlaceholder').style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ==========================================
+        // 10. INITIAL LOAD
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHewan();
+            
+            // Close modal on ESC key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                    closeStokModal();
+                }
+            });
+            
+            // Close modal when clicking outside
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        if (this.id === 'modalHewan') closeModal();
+                        if (this.id === 'modalStok') closeStokModal();
+                    }
+                });
+            });
+        });
+
+        // ==========================================
+        // 11. UPDATE ENDPOINT DI SERVER.JS
+        // ==========================================
+        // Tambahkan endpoint berikut di server.js:
+        // API: Update stok hewan
+        app.put('/api/hewan/:id/stok', async (req, res) => {
+            const { id } = req.params;
+            const { stok, keterangan, aksi, jumlah } = req.body;
+            
+            try {
+                await db.promise().query(
+                    "UPDATE hewan SET stok = ? WHERE id = ?",
+                    [stok, id]
+                );
+                
+                // Catat log perubahan stok (opsional)
+                await db.promise().query(
+                    "INSERT INTO log_stok (hewan_id, stok_sebelum, stok_sesudah, aksi, jumlah, keterangan) VALUES (?, (SELECT stok FROM hewan WHERE id = ?), ?, ?, ?, ?)",
+                    [id, id, stok, aksi, jumlah, keterangan]
+                );
+                
+                res.json({ message: "Stok berhasil diupdate" });
+            } catch (err) {
+                console.error('❌ Error update stok:', err.message);
+                res.status(500).json({ error: err.message });
+            }
+        });
+        
+        // API: Update data hewan
+        app.put('/api/hewan/:id', uploadHewan.single('gambar'), async (req, res) => {
+            const { id } = req.params;
+            const { jenis, harga, stok, deskripsi } = req.body;
+            const gambar = req.file ? req.file.filename : null;
+            
+            try {
+                let query = "UPDATE hewan SET jenis_hewan = ?, harga = ?, stok = ?, deskripsi = ?";
+                let params = [jenis, harga, stok, deskripsi];
+                
+                if (gambar) {
+                    query += ", gambar = ?";
+                    params.push(gambar);
+                }
+                
+                query += " WHERE id = ?";
+                params.push(id);
+                
+                await db.promise().query(query, params);
+                res.json({ message: "Data hewan berhasil diupdate" });
+            } catch (err) {
+                console.error('❌ Error update hewan:', err.message);
+                res.status(500).json({ error: err.message });
+            }
+        });
+
+        // ==========================================
+// 0. FUNGSI DEBUGGING - Cek Koneksi Server
+// ==========================================
+async function checkServerConnection() {
+    try {
+        console.log('🔄 Mengecek koneksi server...');
+        
+        // Cek endpoint test
+        const testResponse = await fetch('http://localhost:3000/api/test');
+        const testData = await testResponse.json();
+        console.log('✅ Test endpoint:', testData);
+        
+        // Cek endpoint yang tersedia
+        const endpointsResponse = await fetch('http://localhost:3000/api/endpoints');
+        const endpoints = await endpointsResponse.json();
+        console.log('📋 Endpoint tersedia:', endpoints);
+        
+        return true;
+    } catch (error) {
+        console.error('❌ Server tidak merespon:', error);
+        alert('⚠️ Server tidak merespon. Pastikan server berjalan di http://localhost:3000');
+        return false;
+    }
+}
+
+// ==========================================
+// 10. INITIAL LOAD - DIPERBAIKI
+// ==========================================
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Halaman admin-stok.html loaded');
+    
+    // Cek koneksi server dulu
+    const isConnected = await checkServerConnection();
+    
+    if (isConnected) {
+        // Load data hewan
+        await loadHewan();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        console.log('✅ Sistem admin-stok siap digunakan');
+    }
+});
+
+function setupEventListeners() {
+    // Close modal on ESC key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            closeStokModal();
+        }
+    });
+    
+    // Close modal when clicking outside
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                if (this.id === 'modalHewan') closeModal();
+                if (this.id === 'modalStok') closeStokModal();
+            }
+        });
+    });
+    
+    // Image preview handler
+    document.getElementById('modalGambar').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            // Validasi ukuran file (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('⚠️ Ukuran file maksimal 5MB');
+                this.value = ''; // Reset input
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('imagePreview').src = e.target.result;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('imagePlaceholder').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+}
+
+
+        
+    </script>
+</body>
+</html>
