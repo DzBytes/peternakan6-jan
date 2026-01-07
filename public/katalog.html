@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Hewan - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navbar akan dimuat di sini -->
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem;">
+        <h2 style="margin-bottom: 20px;">Pilihan Hewan Terbaik</h2>
+        
+        <!-- Filter Section -->
+        <div style="margin-bottom: 25px;">
+            <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px;">
+                    <input type="text" id="searchInput" placeholder="🔍 Cari hewan..." style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.2); color: white;">
+                </div>
+                <select id="filterHarga" style="min-width: 150px; padding: 12px; border-radius: 10px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.2); color: white;">
+                    <option value="">Semua Harga</option>
+                    <option value="terendah">Harga Terendah</option>
+                    <option value="tertinggi">Harga Tertinggi</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid" id="katalog-container">
+            <div style="grid-column: span 3; text-align: center; padding: 40px;">
+                <div class="loading-spinner" style="display: inline-block; width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: var(--accent-green); animation: spin 1s ease-in-out infinite; margin-bottom: 15px;"></div>
+                <p style="color: var(--text-gray);">Memuat katalog hewan...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner CSS -->
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-green);
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        .hewan-card {
+            transition: transform 0.3s, box-shadow 0.3s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .hewan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(212, 252, 121, 0.2);
+        }
+        
+        .stok-indicator {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .stok-tinggi { background: rgba(46, 204, 113, 0.2); color: #2ecc71; border: 1px solid #2ecc71; }
+        .stok-sedikit { background: rgba(241, 196, 15, 0.2); color: #f1c40f; border: 1px solid #f1c40f; }
+        .stok-habis { background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid #e74c3c; }
+        
+        .btn-pesan {
+            margin-top: auto;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-dark) 100%);
+            color: #1a1a1a;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .btn-pesan:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 15px rgba(212, 252, 121, 0.4);
+        }
+        
+        .btn-pesan:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+    </style>
+
+    <script>
+        // Inisialisasi data
+        let allHewanData = [];
+        
+        // Load katalog saat halaman dimuat
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 Katalog page loaded');
+            
+            // Setup event listeners untuk search
+            document.getElementById('searchInput').addEventListener('input', filterHewan);
+            document.getElementById('filterHarga').addEventListener('change', filterHewan);
+            
+            // Load data hewan
+            await loadKatalog();
+        });
+        
+        async function loadKatalog() {
+            try {
+                const container = document.getElementById('katalog-container');
+                
+                // Tampilkan loading
+                container.innerHTML = `
+                    <div style="grid-column: span 3; text-align: center; padding: 40px;">
+                        <div class="loading-spinner" style="width: 40px; height: 40px; margin-bottom: 15px;"></div>
+                        <p style="color: var(--text-gray);">Memuat katalog hewan...</p>
+                    </div>
+                `;
+                
+                // Ambil data dari API
+                const response = await fetch('http://localhost:3000/api/hewan-tersedia');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                allHewanData = await response.json();
+                
+                if (allHewanData.length === 0) {
+                    container.innerHTML = `
+                        <div style="grid-column: span 3; text-align: center; padding: 40px;">
+                            <i class="fas fa-box-open" style="font-size: 48px; color: var(--text-gray); margin-bottom: 15px;"></i>
+                            <h3 style="color: var(--text-gray);">Stok Hewan Sedang Kosong</h3>
+                            <p style="color: var(--text-gray); margin: 10px 0 20px 0;">Mohon maaf, stok hewan sedang habis. Silakan coba lagi nanti.</p>
+                            <a href="index.html" style="color: var(--accent-green); text-decoration: none;">
+                                <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+                            </a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Tampilkan data
+                displayHewan(allHewanData);
+                
+            } catch (error) {
+                console.error('❌ Gagal memuat katalog:', error);
+                
+                const container = document.getElementById('katalog-container');
+                container.innerHTML = `
+                    <div style="grid-column: span 3; text-align: center; padding: 40px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #e74c3c; margin-bottom: 15px;"></i>
+                        <h3 style="color: #e74c3c;">Gagal Memuat Katalog</h3>
+                        <p style="color: var(--text-gray); margin: 10px 0 20px 0;">${error.message}</p>
+                        <button onclick="loadKatalog()" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-redo"></i> Coba Lagi
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        function displayHewan(hewanList) {
+            const container = document.getElementById('katalog-container');
+            
+            // Kosongkan container
+            container.innerHTML = '';
+            
+            if (!hewanList || hewanList.length === 0) {
+                container.innerHTML = `
+                    <div style="grid-column: span 3; text-align: center; padding: 40px;">
+                        <i class="fas fa-search" style="font-size: 48px; color: var(--text-gray); margin-bottom: 15px;"></i>
+                        <h3 style="color: var(--text-gray);">Tidak Ditemukan</h3>
+                        <p style="color: var(--text-gray); margin: 10px 0 20px 0;">Tidak ada hewan yang sesuai dengan pencarian.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Tampilkan setiap hewan
+            hewanList.forEach(hewan => {
+                // Tentukan kelas stok
+                let stokClass = 'stok-habis';
+                let stokText = 'HABIS';
+                
+                if (hewan.stok > 10) {
+                    stokClass = 'stok-tinggi';
+                    stokText = 'TERSEDIA';
+                } else if (hewan.stok > 0 && hewan.stok <= 10) {
+                    stokClass = 'stok-sedikit';
+                    stokText = 'TERBATAS';
+                }
+                
+                const card = document.createElement('div');
+                card.className = 'glass-card hewan-card';
+                card.innerHTML = `
+                    <!-- Gambar Hewan -->
+                    <div class="img-square-container" style="border-radius: 15px; margin-bottom: 15px;">
+                        <img src="/uploads/hewan/${hewan.gambar || 'default.jpg'}" 
+                             class="img-square" 
+                             alt="${hewan.jenis_hewan}"
+                             onerror="this.src='https://images.unsplash.com/photo-1551969014-7d2c4cddf0b6?w=400&h=300&fit=crop&crop=center'"
+                             style="object-fit: cover;">
+                    </div>
+                    
+                    <!-- Info Hewan -->
+                    <div style="flex: 1;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                            <h3 style="margin: 0; font-size: 1.2rem; flex: 1;">${hewan.jenis_hewan}</h3>
+                            <span class="stok-indicator ${stokClass}">${stokText}</span>
+                        </div>
+                        
+                        <!-- Harga -->
+                        <div style="margin: 10px 0;">
+                            <p style="color: var(--accent-green); font-weight: bold; font-size: 1.3rem;">
+                                Rp ${parseInt(hewan.harga).toLocaleString('id-ID')}
+                            </p>
+                        </div>
+                        
+                        <!-- Deskripsi -->
+                        <p style="color: var(--text-gray); font-size: 0.9rem; margin: 10px 0; line-height: 1.5;">
+                            ${hewan.deskripsi ? hewan.deskripsi.substring(0, 100) + (hewan.deskripsi.length > 100 ? '...' : '') : 'Tidak ada deskripsi'}
+                        </p>
+                        
+                        <!-- Stok & Detail -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-size: 0.85rem;">
+                            <span style="color: var(--text-gray);">
+                                <i class="fas fa-box"></i> Stok: ${hewan.stok} ekor
+                            </span>
+                            <span style="color: var(--text-gray); cursor: pointer;" 
+                                  onclick="showDetail(${hewan.id})"
+                                  title="Lihat detail">
+                                <i class="fas fa-info-circle"></i> Detail
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Tombol Pesan -->
+                    <a href="pesan.html?id=${hewan.id}&nama=${encodeURIComponent(hewan.jenis_hewan)}&harga=${hewan.harga}"
+                       class="btn-pesan"
+                       ${hewan.stok <= 0 ? 'style="opacity:0.5; cursor:not-allowed;" onclick="return false;"' : ''}>
+                        ${hewan.stok > 0 ? 
+                            '<i class="fas fa-shopping-cart"></i> Pesan Sekarang' : 
+                            '<i class="fas fa-ban"></i> Stok Habis'}
+                    </a>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function filterHewan() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filterHarga = document.getElementById('filterHarga').value;
+            
+            let filteredData = allHewanData.filter(hewan => {
+                // Filter berdasarkan pencarian
+                const matchesSearch = hewan.jenis_hewan.toLowerCase().includes(searchTerm) ||
+                                     (hewan.deskripsi && hewan.deskripsi.toLowerCase().includes(searchTerm));
+                
+                return matchesSearch;
+            });
+            
+            // Filter berdasarkan harga
+            if (filterHarga === 'terendah') {
+                filteredData.sort((a, b) => a.harga - b.harga);
+            } else if (filterHarga === 'tertinggi') {
+                filteredData.sort((a, b) => b.harga - a.harga);
+            }
+            
+            displayHewan(filteredData);
+        }
+        
+        function showDetail(hewanId) {
+            // Bisa diimplementasikan modal detail nanti
+            window.location.href = `pesan.html?id=${hewanId}`;
+        }
+    </script>
+    
+    <!-- Load navbar script -->
+    <script src="js/navbar.js"></script>
+</body>
+</html>
