@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cicilan Saya</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .cicilan-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; }
+        .badge-status { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .st-lunas { color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+        .st-verif { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+        .st-belum { color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="container">
+        <h2><i class="fas fa-wallet"></i> Cicilan Saya</h2>
+        <div id="loading" class="text-center mt-20"><i class="fas fa-spinner fa-spin"></i> Memuat data...</div>
+        <div id="noData" style="display:none; text-align:center;" class="glass-card mt-20">Tidak ada tagihan aktif.</div>
+
+        <div id="cicilanContent" style="display:none;">
+            <div class="glass-card mt-20">
+                <h3><i class="fas fa-cow"></i> <span id="namaHewan"></span></h3>
+                <div style="color:var(--text-muted); font-size:0.9rem;">Order #<span id="orderId"></span></div>
+                
+                <div style="background:var(--bg-input); height:10px; border-radius:5px; margin:15px 0; overflow:hidden;">
+                    <div id="progressBar" style="height:100%; background:var(--primary-color); width:0%;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span>Dibayar: <b id="valBayar" style="color:var(--primary-color)"></b></span>
+                    <span>Total: <b id="valTotal"></b></span>
+                </div>
+            </div>
+
+            <h3 class="mt-20 mb-20">Jadwal Pembayaran</h3>
+            <div id="listCicilan"></div>
+        </div>
+    </div>
+
+    <div id="modalUpload" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" onclick="closeModal()">&times;</button>
+            <h3>Upload Bukti</h3>
+            <p id="lblAngsuran" style="color:var(--text-muted); margin-bottom:15px"></p>
+            <input type="file" id="fileBukti" accept="image/*">
+            <button onclick="submitBukti()" class="btn-primary" style="width:100%; margin-top:15px">Kirim</button>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        const userId = localStorage.getItem('user_id');
+        let currentOrderId, currentAngsuran;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if(!userId) return window.location.href='login.html';
+            
+            try {
+                const res = await fetch(`http://localhost:3000/api/user/cicilan-aktif?user_id=${userId}`);
+                const data = await res.json();
+                console.log("Data Cicilan:", data); // DEBUG
+
+                document.getElementById('loading').style.display = 'none';
+
+                if(!data.ada_cicilan) {
+                    document.getElementById('noData').style.display = 'block';
+                    return;
+                }
+
+                document.getElementById('cicilanContent').style.display = 'block';
+                document.getElementById('namaHewan').innerText = data.info_pesanan.jenis_hewan;
+                document.getElementById('orderId').innerText = data.info_pesanan.id;
+                document.getElementById('valBayar').innerText = 'Rp ' + parseInt(data.stats.dibayar).toLocaleString();
+                document.getElementById('valTotal').innerText = 'Rp ' + parseInt(data.stats.total).toLocaleString();
+                document.getElementById('progressBar').style.width = data.stats.progress + '%';
+
+                currentOrderId = data.info_pesanan.id;
+                const list = document.getElementById('listCicilan');
+                list.innerHTML = '';
+
+                data.jadwal.forEach(c => {
+                    let badge, btn = '';
+                    if(c.status === 'lunas') badge = `<span class="badge-status st-lunas">LUNAS</span>`;
+                    else if(c.status === 'menunggu_verifikasi') badge = `<span class="badge-status st-verif">DIVERIFIKASI</span>`;
+                    else {
+                        badge = `<span class="badge-status st-belum">BELUM BAYAR</span>`;
+                        btn = `<button onclick="openModal(${c.angsuran_ke})" class="btn-upload-cicilan" style="font-size:0.8rem; padding:5px 10px;">Bayar</button>`;
+                    }
+
+                    let label = c.angsuran_ke===0 ? 'DP (Uang Muka)' : `Bulan ke-${c.angsuran_ke}`;
+                    list.innerHTML += `
+                        <div class="cicilan-item">
+                            <div>
+                                <div style="font-weight:bold">${label}</div>
+                                <div style="font-size:0.85rem; color:var(--text-muted)">Jatuh Tempo: ${new Date(c.jatuh_tempo).toLocaleDateString()}</div>
+                                <div style="color:var(--primary-color); font-weight:bold">Rp ${parseInt(c.nominal).toLocaleString()}</div>
+                            </div>
+                            <div style="text-align:right">
+                                <div style="margin-bottom:5px">${badge}</div>
+                                ${btn}
+                            </div>
+                        </div>
+                    `;
+                });
+
+            } catch(e) { console.error(e); alert("Gagal memuat data."); }
+        });
+
+        function openModal(ke) {
+            currentAngsuran = ke;
+            document.getElementById('lblAngsuran').innerText = ke===0 ? 'Bayar DP' : `Bayar Bulan ke-${ke}`;
+            document.getElementById('modalUpload').style.display = 'flex';
+        }
+        function closeModal() { document.getElementById('modalUpload').style.display = 'none'; }
+        
+        async function submitBukti() {
+            const file = document.getElementById('fileBukti').files[0];
+            if(!file) return alert('Pilih file!');
+            const fd = new FormData();
+            fd.append('bukti', file);
+            
+            const res = await fetch(`http://localhost:3000/api/pesanan/${currentOrderId}/cicilan/${currentAngsuran}`, {method:'POST', body:fd});
+            if(res.ok) { alert('Terkirim!'); location.reload(); }
+            else alert('Gagal upload');
+        }
+    </script>
+</body>
+</html>

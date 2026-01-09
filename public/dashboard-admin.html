@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard Admin - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--card-border); padding: 20px; border-radius: 15px; text-align: center; }
+        .stat-value { font-size: 2.5rem; font-weight: bold; margin: 10px 0; color: var(--accent-green); }
+        .stat-label { color: var(--text-gray); font-size: 0.9rem; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+        .menu-item {
+            background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px;
+            text-align: center; color: white; text-decoration: none; transition: 0.3s; border: 1px solid transparent;
+        }
+        .menu-item:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-green); transform: translateY(-5px); }
+        .menu-icon { font-size: 2rem; margin-bottom: 10px; color: var(--accent-green); }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem;">
+        <h2 style="margin-bottom: 20px;">Dashboard Admin</h2>
+        
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Pesanan Perlu Verifikasi</div>
+                <div class="stat-value" id="countPending">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Omset (Selesai)</div>
+                <div class="stat-value" id="totalSales" style="font-size: 1.8rem;">Rp 0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Jenis Hewan Tersedia</div>
+                <div class="stat-value" id="countHewan">0</div>
+            </div>
+        </div>
+
+        <h3 style="margin-bottom: 15px;">Menu Cepat</h3>
+        <div class="menu-grid">
+            <a href="admin-pesanan.html" class="menu-item">
+                <div class="menu-icon"><i class="fas fa-shopping-cart"></i></div>
+                <div>Pesanan Masuk</div>
+            </a>
+            <a href="admin-stok.html" class="menu-item">
+                <div class="menu-icon"><i class="fas fa-box-open"></i></div>
+                <div>Kelola Stok & Kesehatan</div>
+            </a>
+            <a href="admin-laporan.html" class="menu-item">
+                <div class="menu-icon"><i class="fas fa-chart-line"></i></div>
+                <div>Laporan Keuangan</div>
+            </a>
+            <a href="index.html" class="menu-item">
+                <div class="menu-icon"><i class="fas fa-home"></i></div>
+                <div>Lihat Website Utama</div>
+            </a>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Cek Login Admin
+            const role = localStorage.getItem('role');
+            if(role !== 'admin') window.location.href = 'login.html';
+
+            // Load Stats
+            try {
+                const res = await fetch('http://localhost:3000/api/admin/dashboard-stats');
+                const data = await res.json();
+                
+                document.getElementById('countPending').innerText = data.pendingCount;
+                document.getElementById('totalSales').innerText = 'Rp ' + parseInt(data.totalSales || 0).toLocaleString('id-ID');
+                document.getElementById('countHewan').innerText = data.stokData.length;
+            } catch (e) {
+                console.error(e);
+            }
+        });
+    </script>
+</body>
+</html>

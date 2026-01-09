@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Form Pemesanan - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Menggunakan style yang sama dengan metode pembayaran agar konsisten */
+        .metode-container { display: flex; gap: 15px; margin-top: 10px; flex-wrap: wrap; }
+        .metode-option { flex: 1; min-width: 140px; }
+        .metode-radio { display: none; }
+        .metode-card {
+            background: var(--card-bg); border: 2px solid transparent; border-radius: 15px;
+            padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; height: 100%;
+        }
+        .metode-card:hover { transform: translateY(-5px); border-color: var(--card-border); }
+        .metode-radio:checked + .metode-card {
+            border-color: var(--accent-green); background: rgba(212, 252, 121, 0.1);
+            box-shadow: 0 5px 15px rgba(212, 252, 121, 0.2);
+        }
+        .metode-icon { font-size: 2rem; color: var(--accent-green); margin-bottom: 10px; }
+        .info-box {
+            background: rgba(212, 252, 121, 0.1); border: 1px solid var(--accent-green);
+            border-radius: 10px; padding: 15px; margin: 15px 0; animation: fadeIn 0.5s;
+        }
+        textarea, input[type="text"], input[type="date"], input[type="number"], select {
+            width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--card-border); border-radius: 8px; color: #fff;
+        }
+        .loading { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: var(--accent-green); animation: spin 1s ease-in-out infinite; margin-right: 10px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-message { background: rgba(231, 76, 60, 0.1); border: 1px solid #e74c3c; color: #e74c3c; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; }
+        .success-message { background: rgba(46, 204, 113, 0.1); border: 1px solid #2ecc71; color: #2ecc71; padding: 10px; border-radius: 8px; margin: 10px 0; text-align: center; }
+        
+        /* Style form ibadah */
+        .ibadah-form { display: none; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-top: 15px; border: 1px dashed var(--accent-green); }
+    </style>
+</head>
+<body style="display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px;">
+
+    <div class="glass-card" style="width: 100%; max-width: 600px; padding: 30px;">
+        <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-clipboard-list"></i> Form Pemesanan
+        </h2>
+        
+        <div id="errorContainer"></div>
+        
+        <form id="formPesan">
+            <div class="form-group">
+                <label><i class="fas fa-paw"></i> Jenis Hewan</label>
+                <input type="text" id="namaHewan" readonly style="background: rgba(0,0,0,0.3); color: var(--text-gray); font-weight: bold;">
+            </div>
+            
+            <div class="form-group">
+                <label><i class="fas fa-tag"></i> Harga Satuan</label>
+                <input type="text" id="hargaSatuanDisplay" readonly style="background: rgba(0,0,0,0.3); color: var(--accent-green); font-weight: bold;">
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-praying-hands"></i> Keperluan Pembelian</label>
+                <select id="tipeIbadah" onchange="toggleFormIbadah()">
+                    <option value="daging_saja">Konsumsi Biasa / Ternak</option>
+                    <option value="qurban_sendiri">Qurban (Perorangan)</option>
+                    <option value="qurban_patungan">Qurban Patungan (Sapi 1/7)</option>
+                    <option value="aqiqah">Aqiqah</option>
+                </select>
+            </div>
+
+            <div id="formQurban" class="ibadah-form">
+                <h4 style="margin-bottom: 10px; color: var(--accent-green);">Data Shohibul Qurban</h4>
+                <div class="form-group">
+                    <label>Nama Pekurban (Bin/Binti)</label>
+                    <input type="text" id="namaShohibul" placeholder="Contoh: Ahmad bin Fulan">
+                </div>
+            </div>
+
+            <div id="formAqiqah" class="ibadah-form">
+                <h4 style="margin-bottom: 10px; color: var(--accent-green);">Data Anak Aqiqah</h4>
+                <div class="form-group">
+                    <label>Nama Anak</label>
+                    <input type="text" id="namaAnak" placeholder="Nama lengkap anak">
+                </div>
+                <div class="form-group">
+                    <label>Nama Ayah</label>
+                    <input type="text" id="namaAyah" placeholder="Nama ayah kandung">
+                </div>
+                <div class="form-group">
+                    <label>Tanggal Lahir Anak</label>
+                    <input type="date" id="tglLahirAnak">
+                </div>
+            </div>
+
+            <div class="row" style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label><i class="fas fa-hashtag"></i> Jumlah Ekor</label>
+                    <input type="number" id="jumlah" value="1" min="1" max="100" required oninput="validateJumlah()">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label><i class="fas fa-calendar-alt"></i> Jadwal Potong</label>
+                    <input type="date" id="jadwal" required min="<?php echo date('Y-m-d'); ?>">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-truck"></i> Metode Pengambilan</label>
+                <div class="metode-container">
+                    <label class="metode-option">
+                        <input type="radio" name="pengambilan" value="ambil_sendiri" checked class="metode-radio" onclick="togglePengambilan('ambil_sendiri')">
+                        <div class="metode-card">
+                            <div class="metode-icon"><i class="fas fa-store"></i></div>
+                            <h4>Ambil Sendiri</h4>
+                        </div>
+                    </label>
+                    
+                    <label class="metode-option">
+                        <input type="radio" name="pengambilan" value="diantar" class="metode-radio" onclick="togglePengambilan('diantar')">
+                        <div class="metode-card">
+                            <div class="metode-icon"><i class="fas fa-shipping-fast"></i></div>
+                            <h4>Diantar</h4>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="alamatContainer" style="display: none; margin-top: 15px;">
+                <label><i class="fas fa-map-marker-alt"></i> Alamat Pengiriman Lengkap</label>
+                <textarea id="lokasiPengiriman" rows="3" placeholder="Masukkan alamat lengkap, patokan, dan nomor WA penerima..."></textarea>
+            </div>
+
+            <hr style="border-color: var(--card-border); margin: 20px 0;">
+
+            <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 1rem;">Total Pembayaran:</span>
+                    <span id="totalHarga" style="font-size: 1.8rem; color: var(--accent-green); font-weight: bold;">Rp 0</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label><i class="fas fa-credit-card"></i> Metode Pembayaran</label>
+                <div class="metode-container">
+                    <label class="metode-option">
+                        <input type="radio" name="metode" value="cash" checked class="metode-radio" onclick="toggleMetode('cash')">
+                        <div class="metode-card">
+                            <div class="metode-icon"><i class="fas fa-money-bill-wave"></i></div>
+                            <h4>Cash/Lunas</h4>
+                        </div>
+                    </label>
+                    
+                    <label class="metode-option">
+                        <input type="radio" name="metode" value="cicilan" class="metode-radio" onclick="toggleMetode('cicilan')">
+                        <div class="metode-card">
+                            <div class="metode-icon"><i class="fas fa-calendar-alt"></i></div>
+                            <h4>Cicilan</h4>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div id="infoCicilan" style="display: none;" class="info-box">
+                <h4 style="margin-bottom: 10px;"><i class="fas fa-info-circle"></i> Rincian Cicilan</h4>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span>DP (30%):</span>
+                    <span id="dpAmount" style="font-weight: bold; color: var(--accent-green);">Rp 0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span>Cicilan/bulan (12x):</span>
+                    <span id="cicilanAmount" style="font-weight: bold;">Rp 0</span>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" id="submitBtn" style="margin-top: 20px;">
+                <i class="fas fa-check-circle"></i> BUAT PESANAN
+            </button>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="katalog.html" style="color: var(--text-gray); text-decoration: none;">
+                    <i class="fas fa-arrow-left"></i> Kembali ke Katalog
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+
+        if(localStorage.getItem('role') === 'admin') {
+        alert('⛔ Admin tidak diizinkan masuk halaman pemesanan!');
+        window.location.href = 'dashboard-admin.html';
+    }
+        // --- 1. SETUP AWAL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const hewanId = urlParams.get('id');
+        const namaHewan = decodeURIComponent(urlParams.get('nama') || '');
+        const hargaHewan = parseInt(urlParams.get('harga')) || 0;
+        const userId = localStorage.getItem('user_id');
+
+        if (!hewanId || !userId) {
+            alert('Data tidak lengkap atau belum login');
+            window.location.href = !userId ? 'login.html' : 'katalog.html';
+        }
+
+        document.getElementById('namaHewan').value = namaHewan;
+        document.getElementById('hargaSatuanDisplay').value = "Rp " + hargaHewan.toLocaleString('id-ID');
+        
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        document.getElementById('jadwal').min = tomorrow.toISOString().split('T')[0];
+
+        // --- 2. LOGIKA TAMPILAN ---
+        
+        function toggleFormIbadah() {
+            const tipe = document.getElementById('tipeIbadah').value;
+            const formQurban = document.getElementById('formQurban');
+            const formAqiqah = document.getElementById('formAqiqah');
+
+            formQurban.style.display = 'none';
+            formAqiqah.style.display = 'none';
+
+            if (tipe === 'qurban_sendiri' || tipe === 'qurban_patungan') {
+                formQurban.style.display = 'block';
+            } else if (tipe === 'aqiqah') {
+                formAqiqah.style.display = 'block';
+            }
+        }
+
+        function togglePengambilan(type) {
+            const container = document.getElementById('alamatContainer');
+            const input = document.getElementById('lokasiPengiriman');
+            if (type === 'diantar') {
+                container.style.display = 'block';
+                input.required = true;
+            } else {
+                container.style.display = 'none';
+                input.required = false;
+                input.value = '';
+            }
+        }
+
+        function toggleMetode(type) {
+            const info = document.getElementById('infoCicilan');
+            if (type === 'cicilan') {
+                info.style.display = 'block';
+                hitungTotal();
+            } else {
+                info.style.display = 'none';
+            }
+        }
+
+        function hitungTotal() {
+            const jumlah = parseInt(document.getElementById('jumlah').value) || 1;
+            const total = jumlah * hargaHewan;
+            
+            document.getElementById('totalHarga').innerText = "Rp " + total.toLocaleString('id-ID');
+            const dp = Math.round(total * 0.3);
+            const sisa = total - dp;
+            const cicilan = Math.round(sisa / 12);
+            document.getElementById('dpAmount').innerText = "Rp " + dp.toLocaleString('id-ID');
+            document.getElementById('cicilanAmount').innerText = "Rp " + cicilan.toLocaleString('id-ID');
+        }
+
+        function validateJumlah() {
+            const input = document.getElementById('jumlah');
+            if(input.value < 1) input.value = 1;
+            hitungTotal();
+        }
+
+        hitungTotal();
+
+        // --- 3. SUBMIT FORM ---
+        document.getElementById('formPesan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const errorContainer = document.getElementById('errorContainer');
+            
+            // Ambil Data
+            const jumlah = parseInt(document.getElementById('jumlah').value);
+            const jadwal = document.getElementById('jadwal').value;
+            const metodeBayar = document.querySelector('input[name="metode"]:checked').value;
+            const metodeAmbil = document.querySelector('input[name="pengambilan"]:checked').value;
+            const lokasi = document.getElementById('lokasiPengiriman').value;
+            const totalHarga = jumlah * hargaHewan;
+            const tipeIbadah = document.getElementById('tipeIbadah').value;
+
+            // Validasi Khusus
+            if (metodeAmbil === 'diantar' && !lokasi.trim()) {
+                errorContainer.innerHTML = '<div class="error-message">Alamat pengiriman wajib diisi!</div>';
+                return;
+            }
+
+            // Data Payload
+            const payload = {
+                user_id: userId,
+                hewan_id: hewanId,
+                jumlah: jumlah,
+                total_harga: totalHarga,
+                jadwal: jadwal,
+                metode_bayar: metodeBayar,
+                metode_pengambilan: metodeAmbil,
+                lokasi_pengiriman: lokasi,
+                opsi_pemotongan: 'potong',
+                tipe_ibadah: tipeIbadah
+            };
+
+            // Tambahkan data spesifik
+            if (tipeIbadah.includes('qurban')) {
+                payload.nama_shohibul_qurban = document.getElementById('namaShohibul').value;
+                if (!payload.nama_shohibul_qurban) {
+                    errorContainer.innerHTML = '<div class="error-message">Nama Shohibul Qurban wajib diisi!</div>'; return;
+                }
+            } else if (tipeIbadah === 'aqiqah') {
+                payload.nama_anak = document.getElementById('namaAnak').value;
+                payload.nama_ayah_anak = document.getElementById('namaAyah').value;
+                payload.tanggal_lahir_anak = document.getElementById('tglLahirAnak').value;
+                if (!payload.nama_anak || !payload.nama_ayah_anak) {
+                    errorContainer.innerHTML = '<div class="error-message">Data Aqiqah belum lengkap!</div>'; return;
+                }
+            }
+
+            submitBtn.innerHTML = '<span class="loading"></span> Memproses...';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/pesan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Gagal memesan');
+
+                errorContainer.innerHTML = `<div class="success-message">Pesanan Berhasil! ID: #${result.id_pesanan}</div>`;
+                setTimeout(() => {
+                    window.location.href = `pembayaran.html?id_pesanan=${result.id_pesanan}&metode=${metodeBayar}`;
+                }, 1500);
+
+            } catch (err) {
+                console.error(err);
+                errorContainer.innerHTML = `<div class="error-message">${err.message}</div>`;
+                submitBtn.innerHTML = 'COBA LAGI';
+                submitBtn.disabled = false;
+            }
+        });
+        
+    </script>
+</body>
+</html>

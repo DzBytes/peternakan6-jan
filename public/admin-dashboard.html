@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 20px;">Halo, Admin!</h2>
+        <div class="stats-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px;">
+            <div class="stat-card">
+                <h3>Pesanan Baru</h3>
+                <div id="countPending" style="font-size:2.5rem; color:var(--warning-color); font-weight:bold">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Omset</h3>
+                <div id="totalSales" style="font-size:2rem; color:var(--primary-color); font-weight:bold">Rp 0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Stok Hewan</h3>
+                <div id="countHewan" style="font-size:2.5rem; color:var(--info-color); font-weight:bold">0</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if(localStorage.getItem('role') !== 'admin') window.location.href='login.html';
+            const res = await fetch('http://localhost:3000/api/admin/dashboard-stats');
+            const data = await res.json();
+            document.getElementById('countPending').innerText = data.pendingCount;
+            document.getElementById('totalSales').innerText = 'Rp ' + parseInt(data.totalSales).toLocaleString('id-ID');
+            document.getElementById('countHewan').innerText = data.stokData.length;
+        });
+    </script>
+</body>
+</html>
