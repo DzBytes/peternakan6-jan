@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pengaturan Notifikasi - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+        <h2 style="margin-bottom: 10px; color: var(--accent-green);">⚙️ Pengaturan Notifikasi</h2>
+        <p style="color: var(--text-gray); margin-bottom: 30px;">
+            Atur preferensi notifikasi Anda. Kami hanya mengirimkan notifikasi via Email dan In-App.
+        </p>
+
+        <div class="glass-card" style="margin-bottom: 20px;">
+            <h3><i class="fas fa-sliders-h"></i> Saluran Notifikasi</h3>
+            <hr style="border-color: var(--card-border); margin: 15px 0;">
+            
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                <input type="checkbox" id="email_notif" style="width: auto; margin-right: 10px;">
+                <label for="email_notif" style="margin: 0;">
+                    <strong>Email Notifikasi</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                        Konfirmasi pendaftaran, pembayaran, status pesanan, pengingat jadwal
+                    </div>
+                </label>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                <input type="checkbox" id="inapp_notif" checked style="width: auto; margin-right: 10px;">
+                <label for="inapp_notif" style="margin: 0;">
+                    <strong>In-App Notification</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                        Notifikasi langsung di aplikasi web (selalu aktif)
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <h3><i class="fas fa-bell"></i> Jenis Notifikasi</h3>
+            <hr style="border-color: var(--card-border); margin: 15px 0;">
+            
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                <input type="checkbox" id="notify_pembayaran" style="width: auto; margin-right: 10px;">
+                <label for="notify_pembayaran" style="margin: 0;">
+                    <strong>Pembayaran & Transaksi</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                        Konfirmasi pembayaran, pengingat jatuh tempo, bukti transfer
+                    </div>
+                </label>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                <input type="checkbox" id="notify_pengiriman" style="width: auto; margin-right: 10px;">
+                <label for="notify_pengiriman" style="margin: 0;">
+                    <strong>Jadwal & Pengiriman</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                        Jadwal pemotongan, status pengiriman daging, dokumentasi
+                    </div>
+                </label>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                <input type="checkbox" id="notify_promosi" style="width: auto; margin-right: 10px;">
+                <label for="notify_promosi" style="margin: 0;">
+                    <strong>Promo & Penawaran</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                        Diskon, paket spesial, newsletter, info event
+                    </div>
+                </label>
+            </div>
+            
+            <div class="form-group" style="display: flex; align-items: center; margin-bottom: 15px;">
+                <input type="checkbox" id="notify_stok" style="width: auto; margin-right: 10px;">
+                <label for="notify_stok" style="margin: 0;">
+                    <strong>Info Stok</strong>
+                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                        Notifikasi saat stok hewan hampir habis atau tersedia kembali
+                    </div>
+                </label>
+            </div>
+        </div>
+
+        <button onclick="simpanPengaturan()" class="btn-primary" style="margin-top: 20px; padding: 12px 30px;">
+            <i class="fas fa-save"></i> Simpan Pengaturan
+        </button>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        let userId = localStorage.getItem('user_id');
+        
+        if (!userId) {
+            alert('Silakan login terlebih dahulu!');
+            window.location.href = 'login.html';
+        }
+
+        // Load pengaturan saat halaman dibuka
+        async function loadPengaturan() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/notifikasi/pengaturan?user_id=${userId}`);
+                const settings = await response.json();
+                
+                // Set checkbox values
+                document.getElementById('email_notif').checked = settings.email_notif === 1;
+                document.getElementById('inapp_notif').checked = settings.inapp_notif === 1;
+                document.getElementById('notify_pembayaran').checked = settings.notify_pembayaran === 1;
+                document.getElementById('notify_pengiriman').checked = settings.notify_pengiriman === 1;
+                document.getElementById('notify_promosi').checked = settings.notify_promosi === 1;
+                document.getElementById('notify_stok').checked = settings.notify_stok === 1;
+                
+            } catch (error) {
+                console.error('Gagal load pengaturan:', error);
+                alert('Gagal memuat pengaturan notifikasi');
+            }
+        }
+
+        // Simpan pengaturan
+        async function simpanPengaturan() {
+            const settings = {
+                user_id: userId,
+                email_notif: document.getElementById('email_notif').checked ? 1 : 0,
+                inapp_notif: document.getElementById('inapp_notif').checked ? 1 : 0,
+                notify_pembayaran: document.getElementById('notify_pembayaran').checked ? 1 : 0,
+                notify_pengiriman: document.getElementById('notify_pengiriman').checked ? 1 : 0,
+                notify_promosi: document.getElementById('notify_promosi').checked ? 1 : 0,
+                notify_stok: document.getElementById('notify_stok').checked ? 1 : 0
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/notifikasi/pengaturan', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('✅ Pengaturan berhasil disimpan!');
+                } else {
+                    alert('❌ Gagal menyimpan pengaturan: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('❌ Terjadi kesalahan saat menyimpan');
+            }
+        }
+
+        // Load pengaturan saat halaman dibuka
+        loadPengaturan();
+    </script>
+</body>
+</html>

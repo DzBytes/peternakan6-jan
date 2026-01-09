@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Pesanan Masuk - Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .badge-pending { 
+            background: rgba(241, 196, 15, 0.2); 
+            color: #f1c40f; 
+            border: 1px solid #f1c40f; 
+        }
+        
+        .badge-dibayar { 
+            background: rgba(52, 152, 219, 0.2); 
+            color: #3498db; 
+            border: 1px solid #3498db; 
+        }
+        
+        .badge-selesai { 
+            background: rgba(46, 204, 113, 0.2); 
+            color: #2ecc71; 
+            border: 1px solid #2ecc71; 
+        }
+        
+        .badge-ditolak { 
+            background: rgba(231, 76, 60, 0.2); 
+            color: #e74c3c; 
+            border: 1px solid #e74c3c; 
+        }
+        
+        .metode-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        
+        .metode-cash {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+        
+        .metode-cicilan {
+            background: rgba(155, 89, 182, 0.2);
+            color: #9b59b6;
+            border: 1px solid #9b59b6;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .btn-action {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn-verifikasi {
+            background: linear-gradient(135deg, var(--accent-green) 0%, var(--accent-dark) 100%);
+            color: #000;
+        }
+        
+        .btn-verifikasi:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(212, 252, 121, 0.3);
+        }
+        
+        .btn-tolak {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        
+        .btn-tolak:hover {
+            background: rgba(231, 76, 60, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .btn-hapus {
+            background: rgba(149, 165, 166, 0.2);
+            color: #95a5a6;
+            border: 1px solid #95a5a6;
+        }
+        
+        .btn-hapus:hover {
+            background: rgba(149, 165, 166, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .btn-detail {
+            background: rgba(52, 152, 219, 0.2);
+            color: #3498db;
+            border: 1px solid #3498db;
+        }
+        
+        .btn-detail:hover {
+            background: rgba(52, 152, 219, 0.3);
+            transform: scale(1.05);
+        }
+        
+        .filter-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .filter-select {
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--card-border);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            min-width: 150px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-gray);
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: var(--card-border);
+        }
+        
+        .loading-container {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--accent-green);
+            animation: spin 1s ease-in-out infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hewan-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 2px solid var(--card-border);
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            margin-top: 20px;
+        }
+        
+        .bukti-link {
+            color: var(--accent-green);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .bukti-link:hover {
+            text-decoration: underline;
+        }
+        
+        .summary-card {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .summary-item {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .summary-value {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+            color: var(--accent-green);
+        }
+        
+        .summary-label {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--card-border);
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: var(--accent-green);
+        }
+        
+        .close-modal {
+            background: none;
+            border: none;
+            color: var(--text-gray);
+            font-size: 28px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        
+        .close-modal:hover {
+            color: var(--accent-green);
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .modal-form-group {
+            margin-bottom: 20px;
+        }
+        
+        .modal-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-gray);
+            font-size: 0.9rem;
+        }
+        
+        .action-buttons-modal {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .bukti-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 10px;
+            border: 2px solid var(--card-border);
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .summary-card {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn-action {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+            
+            .hewan-image {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container" style="padding: 2rem;">
+        <div style="margin-bottom: 30px;">
+            <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <i class="fas fa-shopping-cart"></i> Verifikasi Pesanan Masuk
+            </h2>
+            <p style="color: var(--text-gray); margin-bottom: 10px;">
+                Kelola dan verifikasi pesanan dari pelanggan
+            </p>
+            
+            <div class="filter-container">
+                <select id="filterStatus" class="filter-select" onchange="filterPesanan()">
+                    <option value="all">Semua Status</option>
+                    <option value="pending">Belum Bayar</option>
+                    <option value="dibayar">Sudah Bayar</option>
+                    <option value="selesai">Selesai</option>
+                    <option value="ditolak">Ditolak</option>
+                </select>
+                
+                <select id="filterMetode" class="filter-select" onchange="filterPesanan()">
+                    <option value="all">Semua Metode</option>
+                    <option value="cash">Cash</option>
+                    <option value="cicilan">Cicilan</option>
+                </select>
+                
+                <button onclick="refreshPesanan()" class="btn-primary" style="width: auto; padding: 10px 20px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+        
+        <div id="summaryContainer" class="summary-card">
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <p>Memuat ringkasan...</p>
+            </div>
+        </div>
+
+        <div class="glass-card">
+            <div id="pesananContainer">
+                <div class="loading-container">
+                    <div class="loading-spinner"></div>
+                    <p>Memuat data pesanan...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalKonfirmasi" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-check-circle"></i> Konfirmasi Pembayaran</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            
+            <div id="modalContent">
+                </div>
+        </div>
+    </div>
+
+    <div id="modalDetail" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-info-circle"></i> Detail Pesanan</h3>
+                <button class="close-modal" onclick="closeDetailModal()">&times;</button>
+            </div>
+            
+            <div id="modalDetailContent">
+                </div>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        // Global variables
+        let allPesananData = [];
+        let currentPesananId = null;
+        
+        // ==========================================
+        // 1. INITIALIZATION
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Admin Pesanan page loaded');
+            
+            // Load data pesanan
+            loadPesanan();
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+        
+        function setupEventListeners() {
+            // Filter events sudah di HTML
+        }
+        
+        // ==========================================
+        // 2. LOAD PESANAN
+        // ==========================================
+        async function loadPesanan() {
+            try {
+                // Load summary
+                await loadSummary();
+                
+                // Load data pesanan
+                await loadPesananData();
+                
+            } catch (error) {
+                console.error('❌ Gagal memuat pesanan:', error);
+                showError('Gagal memuat data pesanan');
+            }
+        }
+        
+        async function loadSummary() {
+            try {
+                const response = await fetch('http://localhost:3000/api/admin/pesanan');
+                if (!response.ok) throw new Error('Gagal memuat data');
+                
+                const data = await response.json();
+                
+                // Hitung summary
+                const total = data.length;
+                const pending = data.filter(p => p.status_pesanan === 'pending').length;
+                const dibayar = data.filter(p => p.status_pesanan === 'dibayar').length;
+                const selesai = data.filter(p => p.status_pesanan === 'selesai').length;
+                const cicilan = data.filter(p => p.metode_bayar === 'cicilan').length;
+                const cash = data.filter(p => p.metode_bayar === 'cash').length;
+                
+                document.getElementById('summaryContainer').innerHTML = `
+                    <div class="summary-item">
+                        <div class="summary-value">${total}</div>
+                        <div class="summary-label">Total Pesanan</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #f1c40f;">${pending}</div>
+                        <div class="summary-label">Belum Bayar</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #3498db;">${dibayar}</div>
+                        <div class="summary-label">Verifikasi</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #2ecc71;">${selesai}</div>
+                        <div class="summary-label">Selesai</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-value" style="color: #9b59b6;">${cicilan}</div>
+                        <div class="summary-label">Cicilan</div>
+                    </div>
+                `;
+                
+            } catch (error) {
+                document.getElementById('summaryContainer').innerHTML = `
+                    <div style="grid-column: span 5; text-align: center; padding: 20px; color: var(--text-gray);">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function loadPesananData() {
+            try {
+                const container = document.getElementById('pesananContainer');
+                
+                // Tampilkan loading
+                container.innerHTML = `
+                    <div class="loading-container">
+                        <div class="loading-spinner"></div>
+                        <p>Memuat data pesanan...</p>
+                    </div>
+                `;
+                
+                // Ambil data dari API
+                const response = await fetch('http://localhost:3000/api/admin/pesanan');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                allPesananData = await response.json();
+                
+                // Tampilkan data
+                displayPesanan(allPesananData);
+                
+            } catch (error) {
+                console.error('❌ Gagal memuat data:', error);
+                
+                const container = document.getElementById('pesananContainer');
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i>
+                        <h3 style="color: #e74c3c; margin-bottom: 15px;">Gagal Memuat Data</h3>
+                        <p style="margin-bottom: 20px;">${error.message}</p>
+                        <button onclick="loadPesanan()" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fas fa-redo"></i> Coba Lagi
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        // ==========================================
+        // 3. DISPLAY PESANAN (UPDATED)
+        // ==========================================
+        function displayPesanan(pesananList) {
+            const container = document.getElementById('pesananContainer');
+            
+            if (!pesananList || pesananList.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox" style="color: var(--card-border);"></i>
+                        <h3 style="margin-bottom: 15px;">Tidak Ada Pesanan</h3>
+                        <p style="margin-bottom: 20px;">Belum ada pesanan yang masuk.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = `
+                <div class="table-responsive">
+                    <table class="glass-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Pelanggan</th>
+                                <th>Hewan & Metode</th>
+                                <th>Tanggal Pesan</th>
+                                <th>Jadwal Potong</th> <th>Jumlah</th>
+                                <th>Total</th>
+                                <th>Bukti</th>
+                                <th>Status</th>
+                                <th style="text-align: center;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            // Urutkan berdasarkan tanggal terbaru
+            pesananList.sort((a, b) => new Date(b.tanggal_pemesanan) - new Date(a.tanggal_pemesanan));
+            
+            pesananList.forEach((p) => {
+                // Format tanggal pesan
+                const tglPesan = p.tanggal_pemesanan ? 
+                    new Date(p.tanggal_pemesanan).toLocaleDateString('id-ID') : '-';
+                
+                // Format Jadwal Potong
+                const jadwalPotong = p.jadwal_pemotongan ? 
+                    new Date(p.jadwal_pemotongan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+                
+                // Format Jam Potong (hilangkan detik)
+                const jamPotong = p.jam_potong ? p.jam_potong.substring(0, 5) + ' WIB' : '';
+                
+                // Format Metode Pengambilan
+                const metodeAmbil = p.metode_pengambilan === 'diantar' ? 
+                    '<span style="color: var(--accent-green);"><i class="fas fa-truck"></i> Diantar</span>' : 
+                    '<span style="color: #3498db;"><i class="fas fa-people-carry"></i> Ambil Sendiri</span>';
+
+                // Status badge
+                let statusBadge = '';
+                let statusClass = '';
+                
+                switch(p.status_pesanan) {
+                    case 'pending':
+                        statusBadge = 'Belum Bayar';
+                        statusClass = 'badge-pending';
+                        break;
+                    case 'dibayar':
+                        statusBadge = 'Verifikasi';
+                        statusClass = 'badge-dibayar';
+                        break;
+                    case 'selesai':
+                        statusBadge = 'Selesai';
+                        statusClass = 'badge-selesai';
+                        break;
+                    case 'ditolak':
+                        statusBadge = 'Ditolak';
+                        statusClass = 'badge-ditolak';
+                        break;
+                    default:
+                        statusBadge = p.status_pesanan || '-';
+                        statusClass = 'badge-pending';
+                }
+                
+                // Metode bayar badge
+                const metodeClass = p.metode_bayar === 'cicilan' ? 'metode-cicilan' : 'metode-cash';
+                const metodeText = p.metode_bayar === 'cicilan' ? 'Cicilan' : 'Cash';
+                
+                // Tombol aksi
+                let actionButtons = '';
+                
+                if (p.status_pesanan === 'dibayar') {
+                    // Jika sudah bayar, tampilkan tombol verifikasi
+                    actionButtons = `
+                        <button onclick="openKonfirmasiModal(${p.id}, 'terima')" 
+                                class="btn-action btn-verifikasi"
+                                title="Terima Pembayaran">
+                            <i class="fas fa-check"></i> Terima
+                        </button>
+                        <button onclick="openKonfirmasiModal(${p.id}, 'tolak')" 
+                                class="btn-action btn-tolak"
+                                title="Tolak Pembayaran">
+                            <i class="fas fa-times"></i> Tolak
+                        </button>
+                    `;
+                } else if (p.status_pesanan === 'pending') {
+                    // Jika belum bayar
+                    actionButtons = `
+                        <button onclick="hapusPesanan(${p.id}, '${p.jenis_hewan}')" 
+                                class="btn-action btn-hapus"
+                                title="Hapus Pesanan">
+                            <i class="fas fa-trash"></i> Hapus
+                        </button>
+                    `;
+                } else if (p.status_pesanan === 'selesai') {
+                    // Jika sudah selesai
+                    actionButtons = `
+                        <span style="color: var(--text-gray); font-size: 0.85rem;">
+                            <i class="fas fa-check-circle"></i> Selesai
+                        </span>
+                    `;
+                }
+                
+                // Bukti transfer link
+                let buktiLink = '-';
+                if (p.dp_bukti) {
+                    buktiLink = `
+                        <a href="/uploads/bukti/${p.dp_bukti}" 
+                           target="_blank" 
+                           class="bukti-link"
+                           title="Lihat Bukti Transfer">
+                            <i class="fas fa-receipt"></i> Lihat
+                        </a>
+                    `;
+                } else if (p.bukti_transfer) {
+                    buktiLink = `
+                        <a href="/uploads/bukti/${p.bukti_transfer}" 
+                           target="_blank" 
+                           class="bukti-link"
+                           title="Lihat Bukti Transfer">
+                            <i class="fas fa-receipt"></i> Lihat
+                        </a>
+                    `;
+                }
+                
+                // Info cicilan untuk metode cicilan
+                let cicilanInfo = '';
+                if (p.metode_bayar === 'cicilan') {
+                    const dpNominal = p.dp_nominal ? 
+                        `<div style="font-size: 0.8rem; color: var(--text-gray); margin-top: 3px;">
+                            DP: Rp ${parseInt(p.dp_nominal).toLocaleString('id-ID')}
+                        </div>` : '';
+                    
+                    cicilanInfo = dpNominal;
+                }
+                
+                html += `
+                    <tr>
+                        <td>#${p.id}</td>
+                        <td>
+                            <div>
+                                <strong>${p.nama_lengkap}</strong>
+                                <div style="font-size: 0.85rem; color: var(--text-gray); margin-top: 3px;">
+                                    ${p.email}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <strong>${p.jenis_hewan}</strong>
+                                <div style="margin-top: 5px;">
+                                    <span class="metode-badge ${metodeClass}">
+                                        <i class="fas fa-${p.metode_bayar === 'cicilan' ? 'calendar-alt' : 'money-bill-wave'}"></i>
+                                        ${metodeText}
+                                    </span>
+                                    ${cicilanInfo}
+                                </div>
+                            </div>
+                        </td>
+                        <td>${tglPesan}</td>
+                        
+                        <td>
+                            <div style="font-weight: bold;">${jadwalPotong}</div>
+                            ${jamPotong ? `<div style="font-size: 0.85rem; color: var(--accent-green); margin-top:2px;"><i class="fas fa-clock"></i> ${jamPotong}</div>` : ''}
+                            <div style="font-size: 0.8rem; margin-top: 5px;">${metodeAmbil}</div>
+                        </td>
+
+                        <td>${p.jumlah} ekor</td>
+                        <td style="color: var(--accent-green); font-weight: bold;">
+                            Rp ${parseInt(p.total_harga).toLocaleString('id-ID')}
+                        </td>
+                        <td>${buktiLink}</td>
+                        <td>
+                            <span class="status-badge ${statusClass}">
+                                ${statusBadge}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                ${actionButtons}
+                                <button onclick="showDetailPesanan(${p.id})" 
+                                        class="btn-action btn-detail"
+                                        title="Lihat Detail">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+        
+        // ==========================================
+        // 4. FILTER FUNCTIONS
+        // ==========================================
+        function filterPesanan() {
+            const filterStatus = document.getElementById('filterStatus').value;
+            const filterMetode = document.getElementById('filterMetode').value;
+            
+            let filteredData = allPesananData.filter(p => {
+                // Filter status
+                let statusMatch = true;
+                if (filterStatus !== 'all') {
+                    statusMatch = p.status_pesanan === filterStatus;
+                }
+                
+                // Filter metode
+                let metodeMatch = true;
+                if (filterMetode !== 'all') {
+                    metodeMatch = p.metode_bayar === filterMetode;
+                }
+                
+                return statusMatch && metodeMatch;
+            });
+            
+            displayPesanan(filteredData);
+        }
+        
+        // ==========================================
+        // 5. MODAL FUNCTIONS
+        // ==========================================
+        function openKonfirmasiModal(pesananId, action) {
+            try {
+                currentPesananId = pesananId;
+                
+                const pesanan = allPesananData.find(p => p.id === pesananId);
+                
+                if (!pesanan) {
+                    throw new Error('Data pesanan tidak ditemukan di memori lokal');
+                }
+                
+                const modal = document.getElementById('modalKonfirmasi');
+                const content = document.getElementById('modalContent');
+                
+                const formatRupiah = (num) => 'Rp ' + parseInt(num || 0).toLocaleString('id-ID');
+
+                if (action === 'terima') {
+                    content.innerHTML = `
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <i class="fas fa-check-circle" style="font-size: 3rem; color: #2ecc71;"></i>
+                            <h3 style="margin: 15px 0 10px 0;">Konfirmasi Pembayaran</h3>
+                            <p style="color: var(--text-gray);">Apakah Anda yakin ingin menerima pembayaran ini?</p>
+                        </div>
+                        
+                        <div style="background: rgba(46, 204, 113, 0.1); padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #2ecc71;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-gray);">Pesanan ID:</span>
+                                <span style="font-weight: bold;">#${pesanan.id}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-gray);">Pelanggan:</span>
+                                <span style="font-weight: bold;">${pesanan.nama_lengkap}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-gray);">Total:</span>
+                                <span style="font-weight: bold; color: var(--accent-green);">
+                                    ${formatRupiah(pesanan.total_harga)}
+                                </span>
+                            </div>
+                            ${pesanan.metode_bayar === 'cicilan' ? `
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                    <span style="color: var(--text-gray);">DP Dibayar:</span>
+                                    <span style="font-weight: bold; color: var(--accent-green);">
+                                        ${formatRupiah(pesanan.dp_nominal || (pesanan.total_harga * 0.3))}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${pesanan.dp_bukti || pesanan.bukti_transfer ? `
+                            <div class="modal-form-group">
+                                <label>Bukti Transfer</label>
+                                <img src="/uploads/bukti/${pesanan.dp_bukti || pesanan.bukti_transfer}" 
+                                     alt="Bukti Transfer" 
+                                     class="bukti-preview"
+                                     onerror="this.style.display='none'">
+                            </div>
+                        ` : ''}
+                        
+                        <div class="modal-form-group">
+                            <label for="catatan">Catatan (Opsional)</label>
+                            <textarea id="catatan" 
+                                      rows="3" 
+                                      placeholder="Tambahkan catatan jika perlu..."
+                                      style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.2); color: white;"></textarea>
+                        </div>
+                        
+                        <div class="action-buttons-modal">
+                            <button type="button" class="btn-secondary" onclick="closeModal()" style="padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-gray); border-radius: 8px; cursor: pointer;">
+                                Batal
+                            </button>
+                            <button type="button" class="btn-primary" onclick="verifikasiPembayaran('selesai')" style="padding: 10px 20px;">
+                                <i class="fas fa-check"></i> Konfirmasi
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div style="text-align: center; margin-bottom: 20px;">
+                            <i class="fas fa-times-circle" style="font-size: 3rem; color: #e74c3c;"></i>
+                            <h3 style="margin: 15px 0 10px 0;">Tolak Pembayaran</h3>
+                            <p style="color: var(--text-gray);">Apakah Anda yakin ingin menolak pembayaran ini?</p>
+                        </div>
+                        
+                        <div style="background: rgba(231, 76, 60, 0.1); padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #e74c3c;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-gray);">Pesanan ID:</span>
+                                <span style="font-weight: bold;">#${pesanan.id}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span style="color: var(--text-gray);">Pelanggan:</span>
+                                <span style="font-weight: bold;">${pesanan.nama_lengkap}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="modal-form-group">
+                            <label for="alasanTolak">Alasan Penolakan *</label>
+                            <textarea id="alasanTolak" 
+                                      rows="3" 
+                                      placeholder="Berikan alasan penolakan..."
+                                      required
+                                      style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--card-border); background: rgba(0,0,0,0.2); color: white;"></textarea>
+                        </div>
+                        
+                        <div class="action-buttons-modal">
+                            <button type="button" class="btn-secondary" onclick="closeModal()" style="padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid var(--card-border); color: var(--text-gray); border-radius: 8px; cursor: pointer;">
+                                Batal
+                            </button>
+                            <button type="button" class="btn-tolak" onclick="verifikasiPembayaran('ditolak')" style="padding: 10px 20px; border: none;">
+                                <i class="fas fa-times"></i> Tolak
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+            } catch (error) {
+                console.error('❌ Error buka modal:', error);
+                alert('Gagal memuat detail pesanan: ' + error.message);
+            }
+        }
+        
+        function closeModal() {
+            document.getElementById('modalKonfirmasi').style.display = 'none';
+            document.body.style.overflow = 'auto';
+            currentPesananId = null;
+        }
+        
+        async function showDetailPesanan(pesananId) {
+            try {
+                // Ambil detail pesanan
+                const response = await fetch(`http://localhost:3000/api/pesanan/${pesananId}/cicilan`);
+                if (!response.ok) throw new Error('Gagal memuat detail');
+                
+                const data = await response.json();
+                const pesanan = data.pesanan;
+                const cicilan = data.cicilan || [];
+                const history = data.history || [];
+                
+                // Format tanggal & jam
+                const jadwalPotong = pesanan.jadwal_pemotongan ? 
+                    new Date(pesanan.jadwal_pemotongan).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-';
+                const jamPotong = pesanan.jam_potong ? pesanan.jam_potong.substring(0, 5) + ' WIB' : '-';
+                const metodeAmbil = pesanan.metode_pengambilan === 'diantar' ? 'Diantar ke lokasi' : 'Diambil sendiri';
+
+                // Tampilkan modal detail
+                const modal = document.getElementById('modalDetail');
+                const content = document.getElementById('modalDetailContent');
+                
+                let cicilanHtml = '';
+                if (cicilan.length > 0) {
+                    cicilanHtml = `
+                        <div style="margin-top: 20px;">
+                            <h4 style="color: var(--text-gray); margin-bottom: 10px;">
+                                <i class="fas fa-calendar-alt"></i> Jadwal Cicilan
+                            </h4>
+                            <div style="max-height: 200px; overflow-y: auto;">
+                    `;
+                    
+                    cicilan.forEach(c => {
+                        const status = c.status === 'dibayar' ? 
+                            `<span class="badge bg-success" style="font-size: 0.7rem;">Lunas</span>` : 
+                            `<span class="badge bg-warning" style="font-size: 0.7rem;">Belum</span>`;
+                        
+                        cicilanHtml += `
+                            <div style="display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                                <div>
+                                    <div style="font-weight: bold;">Angsuran ke-${c.angsuran_ke}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-gray);">
+                                        Jatuh tempo: ${new Date(c.jatuh_tempo).toLocaleDateString('id-ID')}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-weight: bold; color: var(--accent-green);">
+                                        Rp ${parseInt(c.nominal).toLocaleString('id-ID')}
+                                    </div>
+                                    ${status}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    cicilanHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                let historyHtml = '';
+                if (history.length > 0) {
+                    historyHtml = `
+                        <div style="margin-top: 20px;">
+                            <h4 style="color: var(--text-gray); margin-bottom: 10px;">
+                                <i class="fas fa-history"></i> Riwayat Pembayaran
+                            </h4>
+                            <div style="max-height: 200px; overflow-y: auto;">
+                    `;
+                    
+                    history.forEach(h => {
+                        const jenis = h.jenis === 'dp' ? 'Down Payment' : 
+                                     h.jenis === 'cicilan' ? 'Cicilan' : 'Pelunasan';
+                        
+                        historyHtml += `
+                            <div style="display: flex; justify-content: space-between; padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <div>
+                                    <div style="font-size: 0.9rem; font-weight: bold;">${jenis}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-gray);">
+                                        ${new Date(h.tanggal).toLocaleDateString('id-ID')}
+                                    </div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="color: var(--accent-green); font-weight: bold;">
+                                        Rp ${parseInt(h.nominal).toLocaleString('id-ID')}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    historyHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = `
+                    <div>
+                        <div style="background: rgba(0,0,0,0.2); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-size: 0.9rem; color: var(--text-gray);">Pesanan ID</div>
+                                    <div style="font-size: 1.2rem; font-weight: bold;">#${pesanan.id}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.9rem; color: var(--text-gray);">Metode</div>
+                                    <span class="metode-badge ${pesanan.metode_bayar === 'cicilan' ? 'metode-cicilan' : 'metode-cash'}" style="font-size: 0.9rem;">
+                                        ${pesanan.metode_bayar === 'cicilan' ? 'Cicilan' : 'Cash'}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <div>
+                                    <div style="font-size: 0.9rem; color: var(--text-gray);">Pelanggan</div>
+                                    <div style="font-weight: bold;">${pesanan.nama_lengkap}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-gray);">${pesanan.email}</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.9rem; color: var(--text-gray);">Tanggal Pesan</div>
+                                    <div style="font-weight: bold;">${new Date(pesanan.tanggal_pemesanan).toLocaleDateString('id-ID')}</div>
+                                </div>
+                            </div>
+                            
+                            <div style="background: rgba(255,255,255,0.05); padding: 10px; border-radius: 8px; margin-bottom: 15px;">
+                                <h5 style="margin:0 0 10px 0; color:var(--accent-green);"><i class="fas fa-clock"></i> Jadwal & Pengiriman</h5>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="color: var(--text-gray); font-size: 0.9rem;">Tanggal Potong:</span>
+                                    <span>${jadwalPotong}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                    <span style="color: var(--text-gray); font-size: 0.9rem;">Jam Potong:</span>
+                                    <span>${jamPotong}</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="color: var(--text-gray); font-size: 0.9rem;">Metode:</span>
+                                    <span>${metodeAmbil}</span>
+                                </div>
+                                ${pesanan.metode_pengambilan === 'diantar' ? `
+                                <div style="margin-top: 8px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 5px;">
+                                    <span style="color: var(--text-gray); font-size: 0.9rem;">Alamat:</span>
+                                    <div style="font-size: 0.9rem; font-style: italic;">${pesanan.lokasi_pengiriman || pesanan.alamat || '-'}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+
+                            <div style="display: flex; justify-content: space-between;">
+                                <div>
+                                    <div style="font-size: 0.9rem; color: var(--text-gray);">Hewan</div>
+                                    <div style="font-weight: bold;">${pesanan.jenis_hewan}</div>
+                                    <div style="font-size: 0.85rem; color: var(--text-gray);">${pesanan.jumlah} ekor</div>
+                                </div>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 0.9rem; color: var(--text-gray);">Total</div>
+                                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--accent-green);">
+                                        Rp ${parseInt(pesanan.total_harga).toLocaleString('id-ID')}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            ${pesanan.dp_nominal && pesanan.metode_bayar === 'cicilan' ? `
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <div>
+                                            <div style="font-size: 0.9rem; color: var(--text-gray);">DP (30%)</div>
+                                            <div style="color: var(--accent-green); font-weight: bold;">
+                                                Rp ${parseInt(pesanan.dp_nominal).toLocaleString('id-ID')}
+                                            </div>
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <div style="font-size: 0.9rem; color: var(--text-gray);">Sisa</div>
+                                            <div style="color: var(--accent-green); font-weight: bold;">
+                                                Rp ${parseInt(pesanan.total_harga - pesanan.dp_nominal).toLocaleString('id-ID')}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        ${cicilanHtml}
+                        ${historyHtml}
+                        
+                        <div style="margin-top: 25px; text-align: center;">
+                            <button onclick="closeDetailModal()" class="btn-primary" style="padding: 10px 30px;">
+                                <i class="fas fa-times"></i> Tutup
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+                
+            } catch (error) {
+                console.error('❌ Error detail pesanan:', error);
+                alert('Gagal memuat detail pesanan: ' + error.message);
+            }
+        }
+        
+        function closeDetailModal() {
+            document.getElementById('modalDetail').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+        
+        // ==========================================
+        // 6. VERIFIKASI FUNCTIONS
+        // ==========================================
+        async function verifikasiPembayaran(status) {
+            try {
+                const catatan = document.getElementById('catatan')?.value || 
+                               document.getElementById('alasanTolak')?.value || '';
+                
+                // Kirim request ke server
+                const response = await fetch(`http://localhost:3000/api/admin/pesanan/${currentPesananId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json' 
+                    },
+                    body: JSON.stringify({ 
+                        status: status,
+                        catatan: catatan
+                    })
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || error.message || 'Gagal verifikasi');
+                }
+                
+                // Tutup modal
+                closeModal();
+                
+                // Tampilkan pesan sukses
+                showSuccess(`Pembayaran berhasil ${status === 'selesai' ? 'diverifikasi' : 'ditolak'}`);
+                
+                // Refresh data
+                setTimeout(() => {
+                    loadPesanan();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Error verifikasi:', error);
+                alert('Gagal verifikasi pembayaran: ' + error.message);
+            }
+        }
+        
+        async function hapusPesanan(id, namaHewan) {
+            if (!confirm(`⚠️ Yakin ingin menghapus pesanan #${id}?\n\nHewan: ${namaHewan}\n\nData yang dihapus tidak dapat dikembalikan.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3000/api/admin/pesanan/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || error.message || 'Gagal menghapus');
+                }
+                
+                showSuccess('Pesanan berhasil dihapus');
+                
+                // Refresh data
+                setTimeout(() => {
+                    loadPesanan();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('❌ Error hapus pesanan:', error);
+                alert('Gagal menghapus pesanan: ' + error.message);
+            }
+        }
+        
+        // ==========================================
+        // 7. UTILITY FUNCTIONS
+        // ==========================================
+        function refreshPesanan() {
+            const btn = document.querySelector('button[onclick="refreshPesanan()"]');
+            const originalHtml = btn.innerHTML;
+            
+            btn.innerHTML = '<span class="loading-spinner" style="width: 16px; height: 16px; margin-right: 8px;"></span> Memuat...';
+            btn.disabled = true;
+            
+            loadPesanan().finally(() => {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            });
+        }
+        
+        function showError(message) {
+            // Buat elemen error toast
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(231, 76, 60, 0.9);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                z-index: 9999;
+                animation: slideIn 0.3s;
+            `;
+            
+            toast.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                <div>${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+        
+        function showSuccess(message) {
+            // Buat elemen success toast
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: rgba(46, 204, 113, 0.9);
+                color: white;
+                padding: 15px 20px;
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                z-index: 9999;
+                animation: slideIn 0.3s;
+            `;
+            
+            toast.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <div>${message}</div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, 5000);
+        }
+        
+        // ==========================================
+        // 8. EVENT LISTENERS
+        // ==========================================
+        // Close modal when clicking outside
+        document.getElementById('modalKonfirmasi').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+        
+        document.getElementById('modalDetail').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeDetailModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                if (document.getElementById('modalKonfirmasi').style.display === 'flex') {
+                    closeModal();
+                }
+                if (document.getElementById('modalDetail').style.display === 'flex') {
+                    closeDetailModal();
+                }
+            }
+        });
+
+        // Auto refresh every 30 seconds
+        setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                loadPesanan();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
