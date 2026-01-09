@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracking & Jadwal - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .status-box { 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-top: 15px; 
+            font-size: 0.9rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        .status-box.selesai { 
+            background: rgba(46, 204, 113, 0.1); 
+            border: 1px solid var(--primary-color); 
+            color: var(--primary-color); 
+        }
+        .status-box.proses { 
+            background: rgba(52, 152, 219, 0.1); 
+            border: 1px solid #3498db; 
+            color: #3498db; 
+        }
+        .status-box.pending { 
+            background: rgba(241, 196, 15, 0.1); 
+            border: 1px solid #f1c40f; 
+            color: #f1c40f; 
+        }
+        /* Style untuk Tracking */
+        .tracking-info {
+            margin-top:10px; 
+            padding:10px; 
+            background:#e8f5e9; 
+            border-radius:5px; 
+            border-left: 4px solid #2ecc71;
+            font-size: 0.9rem;
+        }
+        .tracking-waiting {
+            margin-top:10px; 
+            color:#7f8c8d; 
+            font-size:0.9rem; 
+            padding:10px; 
+            background:#f8f9fa; 
+            border-radius:5px;
+            border: 1px dashed #ccc;
+        }
+        .tracking-locked { 
+            margin-top:10px; 
+            padding:10px; 
+            background:#ffebee; 
+            border-radius:5px; 
+            border-left: 4px solid #e74c3c; 
+            color: #c0392b; 
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="container" style="max-width: 800px;">
+        <h2 style="margin-bottom: 25px;"><i class="fas fa-route"></i> Pelacakan Ibadah</h2>
+        <div id="jadwalContainer">
+            <p style="text-align:center;">Memuat data...</p>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        const userId = localStorage.getItem('user_id');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if(!userId) window.location.href = 'login.html';
+            try {
+                const res = await fetch(`http://localhost:3000/api/pesanan?user_id=${userId}`);
+                const data = await res.json();
+                renderJadwal(data);
+            } catch(e) { 
+                console.error(e);
+                document.getElementById('jadwalContainer').innerHTML = "<p style='text-align:center; color:red;'>Gagal memuat data.</p>";
+            }
+        });
+
+        function renderJadwal(list) {
+            const container = document.getElementById('jadwalContainer');
+            container.innerHTML = '';
+            
+            // Filter: Tampilkan yang statusnya relevan (sudah bayar/proses/selesai)
+            const activeList = list.filter(d => ['dibayar', 'diproses', 'selesai', 'menunggu_verifikasi'].includes(d.status_pesanan));
+
+            if(activeList.length === 0) {
+                container.innerHTML = `<div class="glass-card" style="text-align:center; padding:30px;">Belum ada pesanan yang diproses. Silakan lakukan pembayaran terlebih dahulu.</div>`;
+                return;
+            }
+
+            activeList.forEach(item => {
+                let statusText = 'Menunggu Verifikasi Pembayaran';
+                let statusClass = 'pending';
+                let icon = 'fa-clock';
+                
+                // --- 1. Tentukan Status Utama ---
+                if (item.status_pesanan === 'diproses' || item.status_pesanan === 'dibayar') {
+                    statusText = 'Pembayaran Lunas. Sedang Diproses/Dikirim.';
+                    statusClass = 'proses';
+                    icon = 'fa-truck';
+                } else if (item.status_pesanan === 'selesai') {
+                    statusText = 'Ibadah Selesai & Terdistribusi';
+                    statusClass = 'selesai';
+                    icon = 'fa-check-circle';
+                }
+
+                // --- 2. Logika Tracking Distribusi ---
+                let trackingHtml = '';
+                
+                // Cek apakah dianggap LUNAS?
+                // Kita anggap lunas jika status_pembayaran 'lunas' ATAU status_pesanan sudah 'diproses'/'selesai'
+                const isLunas = (item.status_pembayaran === 'lunas' || item.status_pesanan === 'diproses' || item.status_pesanan === 'selesai');
+
+                if (isLunas) {
+                    // JIKA LUNAS: Tampilkan Tracking
+                    if (item.lacak_distribusi) {
+                        trackingHtml = `
+                            <div class="tracking-info">
+                                <div><i class="fas fa-map-marker-alt"></i> <strong>Posisi Paket Terkini:</strong></div>
+                                <div style="margin-top:5px; color:#2d3436;">${item.lacak_distribusi}</div>
+                            </div>`;
+                    } else {
+                        trackingHtml = `
+                            <div class="tracking-waiting">
+                                <i class="fas fa-info-circle"></i> <em>Menunggu update lokasi pengiriman dari admin...</em>
+                            </div>`;
+                    }
+                } else {
+                    // JIKA BELUM LUNAS: Kunci Tampilan
+                    trackingHtml = `
+                        <div class="tracking-locked">
+                            <i class="fas fa-lock"></i> Lunasi pembayaran/cicilan untuk melihat posisi paket.
+                        </div>`;
+                }
+
+                // --- 3. Link Video (Jika Ada) ---
+                let videoLink = '';
+                if(item.link_video_pemotongan) {
+                    videoLink = `<a href="${item.link_video_pemotongan}" target="_blank" class="btn-primary" style="margin-top:10px; font-size:0.85rem;"><i class="fas fa-play"></i> Lihat Dokumentasi</a>`;
+                }
+
+                // --- 4. Render Kartu ---
+                container.innerHTML += `
+                    <div class="glass-card">
+                        <div style="display:flex; justify-content:space-between; align-items:start;">
+                            <div>
+                                <h3 style="margin:0">${item.jenis_hewan}</h3>
+                                <div style="font-size:0.85rem; color:var(--text-muted)">Order #${item.id}</div>
+                            </div>
+                            <div style="text-align:right; font-size:0.9rem;">
+                                <div><i class="fas fa-calendar"></i> Jadwal: ${item.jadwal_pemotongan ? new Date(item.jadwal_pemotongan).toLocaleDateString('id-ID') : '-'}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="status-box ${statusClass}">
+                            <i class="fas ${icon} fa-lg"></i>
+                            <div>
+                                <div style="font-weight:bold">${statusText}</div>
+                            </div>
+                        </div>
+
+                        ${trackingHtml}
+
+                        <div style="text-align:right">${videoLink}</div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

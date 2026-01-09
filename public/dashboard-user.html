@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesanan Saya</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Style Tambahan untuk Modal Cicilan */
+        .cicilan-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; }
+        .badge-status { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+        .st-lunas { color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+        .st-verif { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+        .st-belum { color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+        
+        .progress-container { background: var(--bg-input); height: 10px; border-radius: 5px; margin: 15px 0; overflow: hidden; }
+        .progress-bar { height: 100%; background: var(--primary-color); transition: width 0.3s; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="dashboard-container">
+        <h2 style="margin-bottom: 25px;"><i class="fas fa-receipt"></i> Riwayat Pesanan Saya</h2>
+        <div id="pesananContainer">
+            <div style="text-align: center; padding: 50px;"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>
+        </div>
+    </div>
+
+    <div id="modalCicilan" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3><i class="fas fa-wallet"></i> Rincian Cicilan</h3>
+                <button onclick="closeModal('modalCicilan')" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer">&times;</button>
+            </div>
+            
+            <div id="cicilanContent">
+                <p class="text-center">Memuat data...</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalUpload" class="modal" style="z-index: 3002;">
+        <div class="modal-content" style="max-width: 400px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3>Upload Bukti Transfer</h3>
+                <button onclick="closeModal('modalUpload')" style="background:none; border:none; color:white; font-size:1.2rem; cursor:pointer">&times;</button>
+            </div>
+            <p id="lblAngsuran" style="color:var(--text-muted); margin-bottom:15px; font-size:0.9rem;"></p>
+            
+            <div class="bank-card" style="padding:15px; margin-bottom:15px; background: linear-gradient(135deg, #2c3e50, #2980b9);">
+                <small>Transfer ke BCA:</small><br>
+                <b style="font-size:1.2rem">8830-1234-5678</b><br>
+                <small>a.n Berkah Farm Indonesia</small>
+            </div>
+
+            <input type="file" id="fileBukti" accept="image/*" class="input-field">
+            <button id="btnKirim" onclick="submitBukti()" class="btn-primary" style="width:100%; margin-top:15px">Kirim Bukti</button>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        const userId = localStorage.getItem('user_id');
+        let currentOrderId, currentAngsuran;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!userId) { window.location.href = 'login.html'; return; }
+            loadPesanan();
+        });
+
+        // --- 1. LOAD DAFTAR PESANAN ---
+        async function loadPesanan() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/pesanan?user_id=${userId}`);
+                if(!response.ok) throw new Error("Gagal koneksi ke server");
+                const data = await response.json();
+                renderPesanan(data);
+            } catch (error) {
+                document.getElementById('pesananContainer').innerHTML = `<p style="color:red; text-align:center;">Gagal memuat data: ${error.message}</p>`;
+            }
+        }
+
+        function renderPesanan(list) {
+            const container = document.getElementById('pesananContainer');
+            container.innerHTML = ''; 
+
+            if(!Array.isArray(list) || list.length === 0) {
+                container.innerHTML = `<div class="glass-card" style="text-align:center; padding: 30px;">Belum ada pesanan.</div>`;
+                return;
+            }
+
+            list.forEach(item => {
+                const price = parseInt(item.total_harga).toLocaleString('id-ID');
+                let actionBtn = '';
+                let statusBadge = item.status_pesanan.replace('_', ' ').toUpperCase();
+                let statusColor = '#aaa';
+
+                if(item.status_pesanan === 'selesai') statusColor = '#2ecc71';
+                else if(item.status_pesanan === 'menunggu_verifikasi') statusColor = '#f1c40f';
+                else if(item.status_pesanan === 'batal') statusColor = '#e74c3c';
+
+                // Logika Tombol
+                if (item.metode_bayar === 'cicilan') {
+                    if (item.status_pesanan !== 'batal') {
+                        actionBtn = `<button onclick="showCicilan(${item.id})" class="btn-upload-cicilan"><i class="fas fa-list-ul"></i> Lihat & Bayar Cicilan</button>`;
+                    }
+                } else {
+                    // Cash
+                    if (item.status_pesanan === 'belum_bayar') {
+                        actionBtn = `<a href="pembayaran.html?id=${item.id}" class="btn-bayar">Bayar Sekarang</a>`;
+                    } else if (item.status_pesanan === 'selesai') {
+                        actionBtn = `<a href="user-jadwal.html" class="btn-primary" style="font-size:0.8rem">Lacak Distribusi</a>`;
+                    } else {
+                        actionBtn = `<span style="font-size:0.85rem; color:${statusColor}">${statusBadge}</span>`;
+                    }
+                }
+
+                container.innerHTML += `
+                    <div class="glass-card" style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:15px;">
+                        <div>
+                            <h3>${item.jenis_hewan} <small>(${item.jumlah} ekor)</small></h3>
+                            <div style="color:var(--primary-color); font-weight:bold; font-size:1.1rem;">Rp ${price}</div>
+                            <div style="font-size:0.85rem; color:${statusColor}; margin-top:5px; font-weight:bold;">
+                                <i class="fas fa-info-circle"></i> ${statusBadge}
+                            </div>
+                            <small style="color:var(--text-muted)">Order #${item.id} • ${new Date(item.tanggal_pemesanan).toLocaleDateString('id-ID')}</small>
+                        </div>
+                        <div>${actionBtn}</div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 2. LOGIKA CICILAN ---
+        async function showCicilan(orderId) {
+            document.getElementById('modalCicilan').style.display = 'flex';
+            const container = document.getElementById('cicilanContent');
+            container.innerHTML = '<div style="text-align:center; padding:20px;"><i class="fas fa-spinner fa-spin"></i> Mengambil data...</div>';
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/pesanan/${orderId}/cicilan`);
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.message || "Gagal mengambil data");
+
+                const cicilan = data.cicilan;
+                const pesanan = data.pesanan;
+                
+                // Hitung Progress
+                const total = parseInt(pesanan.total_harga);
+                const dibayar = cicilan.filter(c => c.status === 'lunas' || c.status === 'menunggu_verifikasi')
+                                       .reduce((acc, curr) => acc + parseInt(curr.nominal), 0);
+                const persen = Math.min(100, Math.round((dibayar / total) * 100));
+
+                let html = `
+                    <div style="margin-bottom:20px;">
+                        <div style="display:flex; justify-content:space-between; font-size:0.9rem;">
+                            <span>Terbayar: <b>Rp ${dibayar.toLocaleString()}</b></span>
+                            <span>Total: <b>Rp ${total.toLocaleString()}</b></span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: ${persen}%"></div>
+                        </div>
+                    </div>
+                    <div style="max-height: 400px; overflow-y: auto; padding-right:5px;">
+                `;
+
+                if(cicilan.length === 0) {
+                    html += '<p>Data cicilan tidak ditemukan.</p>';
+                } else {
+                    cicilan.forEach(c => {
+                        let badge = '';
+                        let btn = '';
+                        let tglJatuhTempo = new Date(c.jatuh_tempo).toLocaleDateString('id-ID');
+                        let label = c.angsuran_ke === 0 ? 'DP (Uang Muka)' : `Angsuran ke-${c.angsuran_ke}`;
+
+                        if(c.status === 'lunas') {
+                            badge = `<span class="badge-status st-lunas"><i class="fas fa-check"></i> LUNAS</span>`;
+                        } else if(c.status === 'menunggu_verifikasi') {
+                            badge = `<span class="badge-status st-verif"><i class="fas fa-clock"></i> PROSES</span>`;
+                        } else {
+                            badge = `<span class="badge-status st-belum">BELUM</span>`;
+                            btn = `<button onclick="openUploadModal(${orderId}, ${c.angsuran_ke}, ${c.nominal})" class="btn-primary" style="padding:5px 10px; font-size:0.75rem;">Bayar</button>`;
+                        }
+
+                        html += `
+                            <div class="cicilan-item">
+                                <div>
+                                    <div style="font-weight:bold; font-size:0.95rem;">${label}</div>
+                                    <div style="font-size:0.8rem; color:var(--text-muted)">Jatuh Tempo: ${tglJatuhTempo}</div>
+                                    <div style="color:var(--primary-color); font-weight:bold;">Rp ${parseInt(c.nominal).toLocaleString()}</div>
+                                </div>
+                                <div style="text-align:right; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
+                                    ${badge}
+                                    ${btn}
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+                html += '</div>';
+                container.innerHTML = html;
+
+            } catch (e) {
+                container.innerHTML = `<p style="color:red">Error: ${e.message}</p>`;
+            }
+        }
+
+        // --- 3. LOGIKA UPLOAD ---
+        function openUploadModal(orderId, angsuranKe, nominal) {
+            currentOrderId = orderId;
+            currentAngsuran = angsuranKe;
+            
+            const label = angsuranKe === 0 ? 'DP (Uang Muka)' : `Angsuran ke-${angsuranKe}`;
+            document.getElementById('lblAngsuran').innerHTML = `Pembayaran <b>${label}</b><br>Nominal: <b>Rp ${parseInt(nominal).toLocaleString()}</b>`;
+            document.getElementById('fileBukti').value = ''; 
+            document.getElementById('modalUpload').style.display = 'flex';
+        }
+
+        async function submitBukti() {
+            const file = document.getElementById('fileBukti').files[0];
+            if(!file) return alert('Harap pilih file bukti transfer!');
+            
+            const btn = document.getElementById('btnKirim');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...'; 
+            btn.disabled = true;
+
+            const fd = new FormData();
+            fd.append('bukti', file);
+            
+            // Tentukan URL endpoint (DP berbeda dengan cicilan biasa)
+            let url = `http://localhost:3000/api/pesanan/${currentOrderId}/cicilan/${currentAngsuran}`;
+            if(currentAngsuran === 0) {
+                // Gunakan endpoint khusus DP jika itu adalah angsuran ke-0
+                url = `http://localhost:3000/api/pesanan/${currentOrderId}/dp`;
+            }
+
+            try {
+                const res = await fetch(url, {method:'POST', body:fd});
+                const result = await res.json();
+                
+                if(res.ok) { 
+                    alert('Bukti berhasil dikirim! Menunggu verifikasi admin.'); 
+                    closeModal('modalUpload');
+                    showCicilan(currentOrderId); // Refresh modal list
+                    loadPesanan(); // Refresh list pesanan utama
+                } else {
+                    throw new Error(result.message || "Gagal upload");
+                }
+            } catch (e) {
+                alert('Gagal: ' + e.message);
+            } finally {
+                btn.innerHTML = 'Kirim Bukti'; 
+                btn.disabled = false;
+            }
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Tutup modal jika klik di luar area
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

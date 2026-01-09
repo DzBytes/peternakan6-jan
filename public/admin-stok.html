@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Kelola Stok - Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #222; padding: 20px; border-radius: 15px; width: 90%; max-width: 500px; border: 1px solid #444; }
+        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0 15px 0; background: #333; border: 1px solid #555; color: white; border-radius: 5px; }
+        .btn-health { background: #e67e22; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="container" style="padding: 2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <h2>Kelola Stok & Kesehatan</h2>
+            <button onclick="openModal()" class="btn-primary">Tambah Hewan</button>
+        </div>
+        
+        <div class="glass-card">
+            <table class="glass-table" style="width:100%">
+                <thead>
+                    <tr><th>Nama</th><th>Kategori</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr>
+                </thead>
+                <tbody id="stokTable"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="modalHewan" class="modal">
+        <div class="modal-content">
+            <h3>Tambah/Edit Hewan</h3>
+            <form id="formHewan">
+                <label>Nama Hewan</label>
+                <input type="text" id="nama" required>
+                
+                <label>Kategori</label>
+                <select id="kategori">
+                    <option value="reguler">Reguler</option>
+                    <option value="qurban">Qurban</option>
+                    <option value="aqiqah">Aqiqah</option>
+                </select>
+
+                <label>Harga</label>
+                <input type="number" id="harga" required>
+
+                <label>Stok</label>
+                <input type="number" id="stok" required>
+                
+                <label>Deskripsi</label>
+                <textarea id="deskripsi"></textarea>
+
+                <label>Foto</label>
+                <input type="file" id="gambar">
+
+                <button type="submit" class="btn-primary">Simpan</button>
+                <button type="button" onclick="closeModal()" style="background:#555; border:none; color:white; padding:10px; border-radius:5px">Batal</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalKesehatan" class="modal">
+        <div class="modal-content">
+            <h3><i class="fas fa-stethoscope"></i> Catat Kesehatan</h3>
+            <form id="formKesehatan">
+                <input type="hidden" id="healthHewanId">
+                <label>Tanggal Periksa</label>
+                <input type="date" id="tglPeriksa" required>
+                
+                <label>Kondisi</label>
+                <input type="text" id="kondisi" placeholder="Sehat/Sakit/Butuh Vitamin" required>
+
+                <label>Tindakan/Obat</label>
+                <input type="text" id="tindakan" placeholder="Pemberian vaksin...">
+
+                <label>Nama Dokter/Petugas</label>
+                <input type="text" id="dokter" placeholder="Drh. Budi">
+
+                <button type="submit" class="btn-primary">Simpan Log</button>
+                <button type="button" onclick="document.getElementById('modalKesehatan').style.display='none'" style="background:#555; border:none; color:white; padding:10px; border-radius:5px">Tutup</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadData);
+
+        async function loadData() {
+            const res = await fetch('http://localhost:3000/api/hewan');
+            const data = await res.json();
+            const tbody = document.getElementById('stokTable');
+            tbody.innerHTML = '';
+            
+            data.forEach(h => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${h.jenis_hewan}</td>
+                        <td><span style="background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:10px; font-size:0.8rem">${h.kategori || 'Reguler'}</span></td>
+                        <td>${h.stok}</td>
+                        <td>Rp ${parseInt(h.harga).toLocaleString('id-ID')}</td>
+                        <td>
+                            <button onclick="openHealthModal(${h.id})" class="btn-health"><i class="fas fa-notes-medical"></i> Log</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- Hewan Modal ---
+        function openModal() { document.getElementById('modalHewan').style.display = 'flex'; }
+        function closeModal() { document.getElementById('modalHewan').style.display = 'none'; }
+        
+        document.getElementById('formHewan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('jenis', document.getElementById('nama').value);
+            formData.append('kategori', document.getElementById('kategori').value);
+            formData.append('harga', document.getElementById('harga').value);
+            formData.append('stok', document.getElementById('stok').value);
+            formData.append('deskripsi', document.getElementById('deskripsi').value);
+            formData.append('gambar', document.getElementById('gambar').files[0]);
+
+            await fetch('http://localhost:3000/api/hewan', { method: 'POST', body: formData });
+            alert('Berhasil disimpan');
+            closeModal();
+            loadData();
+        });
+
+        // --- Kesehatan Modal ---
+        function openHealthModal(id) {
+            document.getElementById('healthHewanId').value = id;
+            document.getElementById('modalKesehatan').style.display = 'flex';
+        }
+
+        document.getElementById('formKesehatan').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('healthHewanId').value;
+            const body = {
+                tanggal: document.getElementById('tglPeriksa').value,
+                kondisi: document.getElementById('kondisi').value,
+                tindakan: document.getElementById('tindakan').value,
+                dokter: document.getElementById('dokter').value
+            };
+
+            await fetch(`http://localhost:3000/api/admin/hewan/${id}/kesehatan`, {
+                method: 'POST',
+                headers: {'Content-Type':'application/json'},
+                body: JSON.stringify(body)
+            });
+            alert('Log kesehatan tercatat');
+            document.getElementById('modalKesehatan').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
