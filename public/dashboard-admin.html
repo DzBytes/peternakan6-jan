@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <div style="padding: 2rem 2rem 0 2rem;">
+            <h2>Halo, Admin! 👋</h2>
+            <p style="color: var(--text-gray);">Pantau operasional Berkah Farm hari ini.</p>
+        </div>
+
+        <div id="error-message" style="display:none; margin: 0 2rem; padding: 15px; background: rgba(231, 76, 60, 0.2); border: 1px solid #e74c3c; border-radius: 8px; color: #ffadad;"></div>
+
+        <div class="dashboard-grid">
+            <div class="glass-card" style="background: linear-gradient(135deg, rgba(212, 252, 121, 0.2) 0%, rgba(30, 34, 45, 0.6) 100%); grid-row: span 2;">
+                <div style="display: flex; justify-content: space-between;">
+                    <div><h1 style="color: var(--accent-green);">28°C</h1><p>Cerah</p></div>
+                    <i class="fas fa-cloud-sun" style="font-size: 3rem; color: var(--accent-green);"></i>
+                </div>
+                <div style="margin-top: 2rem;">
+                    <h4>Bandung, Jawa Barat</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-gray);">Kelembaban: 60%</p>
+                </div>
+            </div>
+
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <span class="card-title">Pesanan Pending</span>
+                    <i class="fas fa-bell" style="color: var(--accent-green);"></i>
+                </div>
+                <div class="card-value" id="pending-count">...</div>
+                <p style="font-size: 0.8rem; color: var(--text-gray); margin-top: 5px;">Menunggu verifikasi</p>
+            </div>
+
+            <div class="glass-card">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <span class="card-title">Stok Hewan</span>
+                    <i class="fas fa-cow" style="color: var(--accent-green);"></i>
+                </div>
+                <div id="stok-list-container" style="min-height: 50px;">
+                    <p>Memuat data stok...</p>
+                </div>
+                <a href="admin-stok.html" style="display: block; margin-top: 15px; font-size: 0.9rem;">Kelola Stok &rarr;</a>
+            </div>
+
+            <div class="glass-card" style="grid-column: span 2; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                <i class="fas fa-chart-line" style="font-size: 2rem; color: var(--card-border); margin-bottom: 10px;"></i>
+                <p style="color: var(--text-gray);">Total Penjualan</p>
+                <h3 id="sales-total" style="color: var(--accent-green); font-size: 2rem;">Rp 0</h3>
+            </div>
+
+            <div class="glass-card" style="background: linear-gradient(135deg, rgba(231, 76, 60, 0.2) 0%, rgba(30, 34, 45, 0.6) 100%);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                    <span class="card-title">Stok Kritis</span>
+                    <i class="fas fa-exclamation-triangle" style="color: #e74c3c;"></i>
+                </div>
+                <div id="stok-kritis">...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+<script>
+    const formatRupiah = (n) => new Intl.NumberFormat('id-ID', {style:'currency', currency:'IDR', minimumFractionDigits:0}).format(n);
+
+    async function loadData() {
+        const errorDiv = document.getElementById('error-message');
+        errorDiv.style.display = 'none';
+
+        try {
+            // Fetch ke endpoint baru yang kita buat di server.js
+            const res = await fetch('http://localhost:3000/api/admin/dashboard-stats');
+            
+            if (!res.ok) throw new Error(`Gagal mengambil data: ${res.status}`);
+            
+            const data = await res.json();
+
+            // 1. Update Pesanan Pending
+            // Jika data.pendingCount undefined, tampilkan 0
+            document.getElementById('pending-count').innerText = `${data.pendingCount || 0} Pesanan`;
+            
+            // 2. Update Total Penjualan
+            document.getElementById('sales-total').innerText = formatRupiah(data.totalSales || 0);
+
+            // 3. Update List Stok Hewan
+            const stokList = document.getElementById('stok-list-container');
+            stokList.innerHTML = ''; // Bersihkan loading text
+            
+            if (!data.stokData || data.stokData.length === 0) {
+                stokList.innerHTML = '<p style="color:yellow; font-size:0.9rem;">Belum ada data hewan.</p>';
+            } else {
+                // Tampilkan maksimal 3 hewan teratas (urut stok terkecil dari query SQL)
+                data.stokData.slice(0, 3).forEach(h => {
+                    stokList.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:4px;">
+                            <span>${h.jenis_hewan}</span>
+                            <span style="color: var(--accent-green); font-weight:bold;">${h.stok} Ekor</span>
+                        </div>`;
+                });
+                
+                if (data.stokData.length > 3) {
+                    stokList.innerHTML += `<div style="text-align:center; font-size:0.8rem; color:grey; margin-top:5px;">+ ${data.stokData.length - 3} lainnya</div>`;
+                }
+            }
+
+            // 4. Update Stok Kritis (Logika: Stok <= 3 dianggap kritis)
+            const kritis = (data.stokData || []).filter(h => h.stok > 0 && h.stok <= 3);
+            const kritisDiv = document.getElementById('stok-kritis');
+            
+            if (kritis.length === 0) {
+                kritisDiv.innerHTML = '<span style="color:#2ecc71; font-weight:bold;">Aman</span> <small style="display:block; color:#ccc;">Semua stok tersedia</small>';
+            } else {
+                // Ambil nama hewan yang kritis
+                const namaHewan = kritis.map(h => h.jenis_hewan).join(', ');
+                kritisDiv.innerHTML = `
+                    <span style="color:#e74c3c; font-weight:bold; font-size:1.2rem;">${kritis.length} Item</span>
+                    <small style="display:block; color:#ffadad; margin-top:5px;">Perlu Restock: ${namaHewan}</small>
+                `;
+            }
+
+        } catch (err) {
+            console.error(err);
+            errorDiv.style.display = 'block';
+            errorDiv.innerHTML = `⚠️ <b>Gagal Memuat Data Dashboard:</b><br>${err.message}`;
+        }
+    }
+
+    // Panggil fungsi saat halaman selesai dimuat
+    document.addEventListener('DOMContentLoaded', loadData);
+</script>
+</body>
+</html>

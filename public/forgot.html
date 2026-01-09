@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Lupa Password - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body style="display: flex; justify-content: center; align-items: center; height: 100vh;">
+    <div class="glass-card" style="width: 400px; padding: 40px; text-align: center;">
+        <h2>Lupa Password?</h2>
+        <p style="color: var(--text-gray); margin-bottom: 20px;">Masukkan email Anda, kami akan mengirimkan link reset.</p>
+
+        <form id="forgotForm">
+            <div class="form-group" style="text-align: left;">
+                <label>Email Terdaftar</label>
+                <input type="email" id="email" required placeholder="nama@email.com">
+            </div>
+            <button type="submit" class="btn-primary">KIRIM LINK RESET</button>
+        </form>
+        
+        <a href="login.html" style="display: block; margin-top: 20px; font-size: 0.9rem;">Kembali ke Login</a>
+    </div>
+
+    <script>
+        document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+
+            const res = await fetch('http://localhost:3000/api/forgot-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            
+            const data = await res.json();
+            alert(data.message); // Tampilkan pesan sukses/gagal
+        });
+    </script>
+</body>
+</html>
