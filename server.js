@@ -138,7 +138,7 @@ app.post('/api/hewan', uploadHewan.single('gambar'), async (req, res) => {
     try {
         await db.promise().query(
             "INSERT INTO hewan (jenis_hewan, harga, stok, deskripsi, gambar, kategori) VALUES (?, ?, ?, ?, ?, ?)",
-            [jenis,Vkategori || 'reguler', harga, stok, deskripsi, gambar]
+            [jenis, kategori || 'reguler', harga, stok, deskripsi, gambar]
         );
         res.status(201).json({ message: "Hewan ditambahkan" });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -333,7 +333,7 @@ app.post('/api/pesanan/:id/cicilan/:angsuranKe', uploadBukti.single('bukti'), as
     const bukti = req.file ? req.file.filename : null;
     try {
         await db.promise().query(
-            "UPDATE cicilan SETmWbukti_bayar = ?, status = 'menunggu_verifikasi', tanggal_bayar = NOW() WHERE id_pemesanan = ? AND angsuran_ke = ?", 
+            "UPDATE cicilan SET_bukti_bayar = ?, status = 'menunggu_verifikasi', tanggal_bayar = NOW() WHERE id_pemesanan = ? AND angsuran_ke = ?", 
             [bukti, id, angsuranKe]
         );
         res.json({ message: "Bukti cicilan terkirim" });
