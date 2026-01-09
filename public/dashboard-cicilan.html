@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cicilan Saya</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .cicilan-container { margin-bottom: 40px; border-bottom: 2px dashed #ddd; padding-bottom: 20px; }
+        .cicilan-item { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; padding: 15px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; }
+        .badge-status { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
+        .st-lunas { color: #2ecc71; background: rgba(46, 204, 113, 0.1); }
+        .st-verif { color: #3498db; background: rgba(52, 152, 219, 0.1); }
+        .st-belum { color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="container">
+        <h2><i class="fas fa-wallet"></i> Cicilan Saya</h2>
+        
+        <div id="loading" class="text-center mt-20"><i class="fas fa-spinner fa-spin fa-2x"></i><br>Sedang memuat data...</div>
+        <div id="noData" style="display:none; text-align:center; padding:30px;" class="glass-card mt-20">
+            <i class="fas fa-file-invoice-dollar fa-3x" style="color:#ccc; margin-bottom:15px;"></i>
+            <p id="msgNoData">Tidak ada tagihan cicilan aktif.</p>
+        </div>
+
+        <div id="mainContainer" style="display:none;"></div>
+    </div>
+
+    <div id="modalUpload" class="modal">
+        <div class="modal-content">
+            <button onclick="closeModal()" style="float:right; border:none; background:none; color:white; font-size:1.2rem; cursor:pointer">&times;</button>
+            <h3>Upload Bukti Pembayaran</h3>
+            <p id="lblAngsuran" style="color:var(--text-muted); margin-bottom:15px"></p>
+            <input type="file" id="fileBukti" accept="image/*" class="input-field">
+            <button id="btnKirim" onclick="submitBukti()" class="btn-primary" style="width:100%; margin-top:15px">Kirim Bukti</button>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        
+        const userId = localStorage.getItem('user_id');
+        let currentOrderId, currentAngsuran;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if(!userId) return window.location.href='login.html';
+            await loadCicilan();
+        });
+
+        async function loadCicilan() {
+            const loading = document.getElementById('loading');
+            const noData = document.getElementById('noData');
+            const mainContainer = document.getElementById('mainContainer');
+
+            try {
+                // Fetch data dari server
+                const res = await fetch(`http://localhost:3000/api/user/cicilan-aktif?user_id=${userId}`);
+                if (!res.ok) throw new Error("Gagal terhubung ke server");
+                
+                const data = await res.json();
+                console.log("Data Cicilan:", data); // Debugging
+
+                loading.style.display = 'none';
+
+                // Jika tidak ada data atau data.data kosong
+                if(!data.ada_cicilan || !data.data || data.data.length === 0) {
+                    noData.style.display = 'block';
+                    document.getElementById('msgNoData').innerText = data.message || "Anda belum memiliki cicilan.";
+                    return;
+                }
+
+                mainContainer.style.display = 'block';
+                mainContainer.innerHTML = '';
+
+                // Loop setiap pesanan cicilan (karena sekarang support multiple orders)
+                data.data.forEach((item, index) => {
+                    const info = item.info_pesanan;
+                    const stats = item.stats;
+                    
+                    // Render Header Card untuk Hewan ini
+                    let html = `
+                    <div class="glass-card cicilan-container">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+                            <div>
+                                <h3 style="margin:0; color:var(--primary-color);"><i class="fas fa-cow"></i> ${info.jenis_hewan || 'Hewan (Data Dihapus)'}</h3>
+                                <small style="color:var(--text-muted)">Order #${info.id} • ${new Date(info.tanggal_pemesanan).toLocaleDateString()}</small>
+                                <div style="margin-top:5px; font-size:0.9rem;">Status Pesanan: <b>${info.status_pesanan.replace('_', ' ').toUpperCase()}</b></div>
+                            </div>
+                            <div style="text-align:right">
+                                <span style="font-size:1.2rem; font-weight:bold;">Rp ${parseInt(stats.total).toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div style="background:var(--bg-input); height:12px; border-radius:6px; margin:15px 0; overflow:hidden; position:relative;">
+                            <div style="height:100%; background:var(--primary-color); width:${stats.progress}%;"></div>
+                        </div>
+                        <div style="display:flex; justify-content:space-between; font-size:0.9rem; margin-bottom:20px;">
+                            <span>Sudah Dibayar: <b style="color:#2ecc71">Rp ${parseInt(stats.dibayar).toLocaleString()}</b></span>
+                            <span>Progress: <b>${stats.progress}%</b></span>
+                        </div>
+
+                        <h4>Jadwal Pembayaran</h4>
+                        <div class="list-cicilan">
+                    `;
+
+                    // Render List Cicilan
+                    item.jadwal.forEach(c => {
+                        let badge, btn = '';
+                        if(c.status === 'lunas') {
+                            badge = `<span class="badge-status st-lunas"><i class="fas fa-check"></i> LUNAS</span>`;
+                        } else if(c.status === 'menunggu_verifikasi') {
+                            badge = `<span class="badge-status st-verif"><i class="fas fa-clock"></i> DIVERIFIKASI</span>`;
+                        } else {
+                            badge = `<span class="badge-status st-belum">BELUM BAYAR</span>`;
+                            // PENTING: Pass info.id (Order ID) ke fungsi openModal
+                            btn = `<button onclick="openModal(${info.id}, ${c.angsuran_ke})" class="btn-primary" style="padding:5px 12px; font-size:0.8rem;">Bayar</button>`;
+                        }
+
+                        let label = c.angsuran_ke === 0 ? 'DP (Uang Muka)' : `Angsuran ke-${c.angsuran_ke}`;
+                        let jatuhTempo = new Date(c.jatuh_tempo).toLocaleDateString();
+
+                        html += `
+                            <div class="cicilan-item">
+                                <div>
+                                    <div style="font-weight:bold; margin-bottom:3px;">${label}</div>
+                                    <div style="font-size:0.85rem; color:var(--text-muted)">Jatuh Tempo: ${jatuhTempo}</div>
+                                    <div style="color:var(--primary-color); font-weight:bold; margin-top:3px;">Rp ${parseInt(c.nominal).toLocaleString()}</div>
+                                </div>
+                                <div style="text-align:right; display:flex; flex-direction:column; gap:5px; align-items:flex-end;">
+                                    ${badge}
+                                    ${btn}
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div></div>`; // Tutup container
+                    mainContainer.innerHTML += html;
+                });
+
+            } catch(e) { 
+                console.error(e);
+                loading.style.display = 'none';
+                noData.style.display = 'block';
+                document.getElementById('msgNoData').innerHTML = `<span style="color:red">Error: ${e.message}</span><br>Pastikan server berjalan.`;
+            }
+        }
+
+        function openModal(idPesanan, angsuranKe) {
+            currentOrderId = idPesanan;
+            currentAngsuran = angsuranKe;
+            document.getElementById('lblAngsuran').innerText = angsuranKe === 0 ? 'Upload Bukti DP (Uang Muka)' : `Upload Bukti Angsuran ke-${angsuranKe}`;
+            document.getElementById('fileBukti').value = ''; // Reset file input
+            document.getElementById('modalUpload').style.display = 'flex';
+        }
+
+        function closeModal() { document.getElementById('modalUpload').style.display = 'none'; }
+        
+        async function submitBukti() {
+            const file = document.getElementById('fileBukti').files[0];
+            if(!file) return alert('Pilih file bukti transfer terlebih dahulu!');
+            
+            const btn = document.getElementById('btnKirim');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...'; 
+            btn.disabled = true;
+
+            const fd = new FormData();
+            fd.append('bukti', file);
+            
+            try {
+                const res = await fetch(`http://localhost:3000/api/pesanan/${currentOrderId}/cicilan/${currentAngsuran}`, {method:'POST', body:fd});
+                const result = await res.json();
+                
+                if(res.ok) { 
+                    alert('Bukti berhasil dikirim! Menunggu verifikasi admin.'); 
+                    closeModal();
+                    loadCicilan(); // Reload data
+                } else {
+                    throw new Error(result.message || "Gagal upload");
+                }
+            } catch (e) {
+                alert('Gagal: ' + e.message);
+            } finally {
+                btn.innerHTML = 'Kirim Bukti'; 
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

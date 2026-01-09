@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Katalog Hewan - Berkah Farm</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .filter-section {
+            display: flex; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;
+            background: rgba(255,255,255,0.02); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);
+        }
+        .hewan-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px;
+        }
+        .card-image-wrapper {
+            width: 100%; aspect-ratio: 4/3; overflow: hidden; border-radius: 10px; margin-bottom: 15px; position: relative;
+        }
+        .card-image-wrapper img {
+            width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;
+        }
+        .hewan-card:hover .card-image-wrapper img { transform: scale(1.1); }
+        .badge-category {
+            position: absolute; top: 10px; right: 10px; padding: 5px 12px; border-radius: 20px;
+            font-size: 0.75rem; font-weight: bold; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .badge-qurban { background: linear-gradient(45deg, #f39c12, #d35400); }
+        .badge-aqiqah { background: linear-gradient(45deg, #9b59b6, #8e44ad); }
+        .badge-reguler { background: linear-gradient(45deg, #34495e, #2c3e50); }
+        .price-tag { font-size: 1.4rem; font-weight: 800; color: var(--primary-color); margin: 10px 0; }
+        .stok-info { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+
+    <div class="container">
+        <h2 style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+            <i class="fas fa-store-alt"></i> Pilihan Hewan Terbaik
+        </h2>
+        
+        <div class="filter-section">
+            <div style="flex: 2; min-width: 200px;">
+                <input type="text" id="searchInput" placeholder="🔍 Cari jenis hewan, misal: Sapi Limosin...">
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+                <select id="filterKategori">
+                    <option value="all">Semua Kategori</option>
+                    <option value="qurban">Khusus Qurban</option>
+                    <option value="aqiqah">Khusus Aqiqah</option>
+                    <option value="reguler">Ternak/Reguler</option>
+                </select>
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+                <select id="filterHarga">
+                    <option value="">Urutkan Harga</option>
+                    <option value="terendah">Termurah</option>
+                    <option value="tertinggi">Termahal</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="katalog-container" class="hewan-grid">
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px;">
+                <i class="fas fa-circle-notch fa-spin fa-2x" style="color: var(--primary-color);"></i>
+                <p style="margin-top: 10px; color: var(--text-muted);">Memuat koleksi hewan...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        let allHewanData = [];
+        
+        document.addEventListener('DOMContentLoaded', async () => {
+            const searchInput = document.getElementById('searchInput');
+            const filterKategori = document.getElementById('filterKategori');
+            const filterHarga = document.getElementById('filterHarga');
+
+            searchInput.addEventListener('input', filterHewan);
+            filterKategori.addEventListener('change', filterHewan);
+            filterHarga.addEventListener('change', filterHewan);
+
+            await loadKatalog();
+        });
+        
+        async function loadKatalog() {
+            try {
+                const response = await fetch('http://localhost:3000/api/hewan-tersedia');
+                if (!response.ok) throw new Error('Gagal koneksi server');
+                allHewanData = await response.json();
+                displayHewan(allHewanData);
+            } catch (error) {
+                document.getElementById('katalog-container').innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; color: var(--danger-color);">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        <p>Gagal memuat data katalog.</p>
+                    </div>`;
+            }
+        }
+        
+        function displayHewan(list) {
+            const container = document.getElementById('katalog-container');
+            container.innerHTML = '';
+            
+            if (list.length === 0) {
+                container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted);">Hewan tidak ditemukan.</p>`;
+                return;
+            }
+            
+            list.forEach(hewan => {
+                // Tentukan Badge Kategori
+                let badgeClass = 'badge-reguler';
+                let badgeText = 'Reguler';
+                if(hewan.kategori === 'qurban') { badgeClass = 'badge-qurban'; badgeText = 'Qurban'; }
+                if(hewan.kategori === 'aqiqah') { badgeClass = 'badge-aqiqah'; badgeText = 'Aqiqah'; }
+
+                // Tentukan Stok Status
+                let stokColor = hewan.stok > 5 ? '#2ecc71' : '#f1c40f';
+                let btnState = '';
+                let btnText = 'Pesan Sekarang';
+                if(hewan.stok <= 0) {
+                    stokColor = '#e74c3c'; btnState = 'disabled style="background:#555; cursor:not-allowed"'; btnText = 'Stok Habis';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'glass-card hewan-card';
+                card.innerHTML = `
+                    <div class="card-image-wrapper">
+                        <span class="badge-category ${badgeClass}">${badgeText}</span>
+                        <img src="/uploads/hewan/${hewan.gambar || 'default.jpg'}" onerror="this.src='images/default-hewan.jpg'">
+                    </div>
+                    
+                    <h3 style="font-size: 1.1rem; margin-bottom: 5px;">${hewan.jenis_hewan}</h3>
+                    <div class="stok-info">
+                        <i class="fas fa-box" style="color:${stokColor}"></i> Stok: ${hewan.stok} Ekor
+                    </div>
+                    
+                    <div class="price-tag">Rp ${parseInt(hewan.harga).toLocaleString('id-ID')}</div>
+                    
+                    <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 15px; line-height: 1.4;">
+                        ${hewan.deskripsi ? hewan.deskripsi.substring(0, 70) + '...' : '-'}
+                    </p>
+
+                    <a href="pesan.html?id=${hewan.id}&nama=${encodeURIComponent(hewan.jenis_hewan)}&harga=${hewan.harga}" 
+                       class="btn-primary" style="width: 100%; justify-content: center;" ${btnState}>
+                        <i class="fas fa-shopping-cart"></i> ${btnText}
+                    </a>
+                `;
+                container.appendChild(card);
+            });
+        }
+        
+        function filterHewan() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const kategori = document.getElementById('filterKategori').value;
+            const harga = document.getElementById('filterHarga').value;
+            
+            let filtered = allHewanData.filter(h => {
+                const matchSearch = h.jenis_hewan.toLowerCase().includes(search);
+                const matchKat = kategori === 'all' || h.kategori === kategori;
+                return matchSearch && matchKat;
+            });
+            
+            if (harga === 'terendah') filtered.sort((a, b) => a.harga - b.harga);
+            if (harga === 'tertinggi') filtered.sort((a, b) => b.harga - a.harga);
+            
+            displayHewan(filtered);
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+        const role = localStorage.getItem('role');
+        
+        // Jika Admin, ubah tampilan
+        if (role === 'admin') {
+            // 1. Ubah tombol pesan jadi disabled
+            const btns = document.querySelectorAll('.btn-primary');
+            btns.forEach(btn => {
+                if(btn.innerText.includes('Pesan')) {
+                    btn.style.backgroundColor = '#555';
+                    btn.style.cursor = 'not-allowed';
+                    btn.innerHTML = '<i class="fas fa-ban"></i> Mode Admin';
+                    btn.href = 'javascript:void(0)'; // Matikan link
+                    btn.onclick = () => alert('Admin tidak bisa membuat pesanan. Silakan login sebagai pelanggan.');
+                }
+            });
+
+            // 2. Tambahkan banner peringatan
+            const container = document.querySelector('.container');
+            const alertBox = document.createElement('div');
+            alertBox.style.cssText = "background: rgba(231, 76, 60, 0.2); color: #e74c3c; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #e74c3c; text-align: center; font-weight: bold;";
+            alertBox.innerHTML = "<i class='fas fa-user-shield'></i> Anda login sebagai ADMIN. Mode pemesanan dinonaktifkan.";
+            container.insertBefore(alertBox, container.children[1]); // Taruh di bawah judul
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Laporan Penjualan - Admin</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        select, button { padding: 10px; border-radius: 5px; border: 1px solid #444; background: #333; color: white; }
+        .badge-ibadah { font-size: 0.8rem; padding: 2px 8px; border-radius: 4px; border: 1px solid #555; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="container" style="padding: 2rem;">
+        <h2>Laporan Transaksi</h2>
+        
+        <div class="filter-bar">
+            <select id="filterTipe">
+                <option value="all">Semua Tipe</option>
+                <option value="qurban">Qurban</option>
+                <option value="aqiqah">Aqiqah</option>
+                <option value="reguler">Reguler</option>
+            </select>
+            <button onclick="window.print()"><i class="fas fa-print"></i> Cetak PDF</button>
+        </div>
+
+        <div class="glass-card">
+            <table class="glass-table" style="width:100%">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Pelanggan</th>
+                        <th>Tipe</th>
+                        <th>Hewan</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="laporanTable"></tbody>
+                <tfoot>
+                    <tr style="font-weight:bold; background:rgba(255,255,255,0.1)">
+                        <td colspan="4" style="text-align:right">TOTAL PENDAPATAN</td>
+                        <td id="grandTotal" style="color:var(--accent-green)">Rp 0</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        let allData = [];
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const res = await fetch('http://localhost:3000/api/admin/pesanan');
+            allData = await res.json();
+            renderTable(allData);
+
+            document.getElementById('filterTipe').addEventListener('change', function() {
+                const val = this.value;
+                if(val === 'all') renderTable(allData);
+                else {
+                    const filtered = allData.filter(d => {
+                        if(val === 'qurban') return d.tipe_ibadah.includes('qurban');
+                        if(val === 'aqiqah') return d.tipe_ibadah === 'aqiqah';
+                        return d.tipe_ibadah === 'daging_saja' || !d.tipe_ibadah;
+                    });
+                    renderTable(filtered);
+                }
+            });
+        });
+
+        function renderTable(data) {
+            const tbody = document.getElementById('laporanTable');
+            tbody.innerHTML = '';
+            let totalOmset = 0;
+
+            // Hanya tampilkan yang selesai atau dibayar (pendapatan nyata)
+            const validData = data.filter(d => d.status_pesanan === 'selesai' || d.status_pesanan === 'dibayar');
+
+            validData.forEach(d => {
+                totalOmset += parseFloat(d.total_harga);
+                
+                let tipeLabel = 'Reguler';
+                if(d.tipe_ibadah && d.tipe_ibadah.includes('qurban')) tipeLabel = `Qurban (${d.nama_shohibul_qurban || '-'})`;
+                if(d.tipe_ibadah === 'aqiqah') tipeLabel = `Aqiqah (${d.nama_anak || '-'})`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${new Date(d.tanggal_pemesanan).toLocaleDateString('id-ID')}</td>
+                        <td>${d.nama_lengkap}</td>
+                        <td><span class="badge-ibadah">${tipeLabel}</span></td>
+                        <td>${d.jenis_hewan} (${d.jumlah})</td>
+                        <td>Rp ${parseInt(d.total_harga).toLocaleString('id-ID')}</td>
+                        <td>${d.status_pesanan}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('grandTotal').innerText = 'Rp ' + totalOmset.toLocaleString('id-ID');
+        }
+    </script>
+</body>
+</html>

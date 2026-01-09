@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesanan Saya</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div class="dashboard-container">
+        <h2 style="margin-bottom: 25px;">Riwayat Pesanan Saya</h2>
+        <div id="pesananContainer">
+            <div style="text-align: center; padding: 50px;"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>
+        </div>
+    </div>
+
+    <script src="js/navbar.js"></script>
+    <script>
+        const userId = localStorage.getItem('user_id');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!userId) { window.location.href = 'login.html'; return; }
+            loadPesanan();
+        });
+
+        async function loadPesanan() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/pesanan?user_id=${userId}`);
+                if(!response.ok) throw new Error("Gagal koneksi ke server");
+                const data = await response.json();
+                renderPesanan(data);
+            } catch (error) {
+                document.getElementById('pesananContainer').innerHTML = `<p style="color:red; text-align:center;">Gagal memuat data: ${error.message}</p>`;
+            }
+        }
+
+        function renderPesanan(list) {
+            const container = document.getElementById('pesananContainer');
+            container.innerHTML = ''; 
+
+            if(!Array.isArray(list) || list.length === 0) {
+                container.innerHTML = `<div class="glass-card" style="text-align:center; padding: 30px;">Belum ada pesanan.</div>`;
+                return;
+            }
+
+            list.forEach(item => {
+                const price = parseInt(item.total_harga).toLocaleString('id-ID');
+                let actionBtn = '';
+                
+                // Perbaikan Logika Tombol
+                if (item.metode_bayar === 'cicilan') {
+                    if (item.status_pesanan === 'selesai') {
+                        actionBtn = `<span class="badge-status" style="background:#2ecc71; color:white">LUNAS</span>`;
+                    } else {
+                        actionBtn = `<a href="dashboard-cicilan.html" class="btn-upload-cicilan"><i class="fas fa-wallet"></i> Bayar Cicilan</a>`;
+                    }
+                } else {
+                    // Logika Cash
+                    if (item.status_pesanan === 'belum_bayar') {
+                        actionBtn = `<a href="pembayaran.html?id=${item.id}" class="btn-bayar">Bayar Sekarang</a>`;
+                    } else if (item.status_pesanan === 'menunggu_verifikasi') {
+                        actionBtn = `<span style="color:#f1c40f;">Menunggu Verifikasi</span>`;
+                    } else if (item.status_pesanan === 'selesai') {
+                        actionBtn = `<a href="user-jadwal.html" class="btn-primary" style="font-size:0.8rem">Lacak</a>`;
+                    }
+                }
+
+                container.innerHTML += `
+                    <div class="glass-card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3>${item.jenis_hewan} <small>(${item.jumlah} ekor)</small></h3>
+                            <div style="color:var(--primary-color); font-weight:bold;">Rp ${price}</div>
+                            <div style="font-size:0.85rem; color:#aaa; margin-top:5px;">Status: ${item.status_pesanan}</div>
+                        </div>
+                        <div>${actionBtn}</div>
+                    </div>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
